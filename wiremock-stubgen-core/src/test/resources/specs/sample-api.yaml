@@ -1,0 +1,197 @@
+openapi: 3.0.0
+info:
+  description: Swagger file for testing stub generation
+  version: 1.0.0
+  title: wiremock-stub-generator test swagger
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: get-by-parameters-in-query
+  - name: post-by-request-body-primitive
+  - name: post-by-request-body-composite
+  - name: post-by-request-body-primitive-list
+  - name: post-by-request-body-composite-list
+  - name: get-response-primitive
+  - name: get-response-composite
+  - name: get-response-primitive-list
+  - name: get-response-composite-list
+paths:
+  /get/parameters/in-query:
+    get:
+      tags:
+        - get-by-parameters-in-query
+      operationId: getByInQueryParameters
+      parameters:
+        - name: stringParam
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: integerParam
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: longParam
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: booleanParam
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: floatParam
+          in: query
+          required: false
+          schema:
+            type: number
+            format: float
+        - name: doubleParam
+          in: query
+          required: false
+          schema:
+            type: number
+            format: double
+        - name: enumParam
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+            - EnumValue1
+            - EnumValue2
+      responses:
+        200:
+          description: OK
+  /post/request-body/primitive:
+    post:
+      tags:
+        - post-by-request-body-primitive
+      operationId: postByRequestBodyPrimitive
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+      responses:
+        200:
+          description: OK
+  /post/request-body/composite:
+    post:
+      tags:
+        - post-by-request-body-composite
+      operationId: postByRequestBodyComposite
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompositeBody'
+      responses:
+        200:
+          description: OK
+  /post/request-body/primitive/list:
+    post:
+      tags:
+        - post-by-request-body-primitive-list
+      operationId: postByRequestBodyPrimitiveList
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        200:
+          description: OK
+  /post/request-body/composite/list:
+    post:
+      tags:
+        - post-by-request-body-composite-list
+      operationId: postByRequestBodyCompositeList
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CompositeBody'
+      responses:
+        200:
+          description: OK
+  /get/response/primitive:
+    get:
+      tags:
+        - get-response-primitive
+      operationId: getResponsePrimitive
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: string
+          description: primitive
+  /get/response/composite:
+    get:
+      tags:
+        - get-response-composite
+      operationId: getResponseComposite
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompositeBody'
+          description: composite
+  /get/response/primitive/list:
+    get:
+      tags:
+        - get-response-primitive-list
+      operationId: getResponsePrimitiveList
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+          description: primitiveList
+  /get/response/composite/list:
+    get:
+      tags:
+        - get-response-composite-list
+      operationId: getResponseCompositeList
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CompositeBody'
+          description: compositeList
+components:
+  schemas:
+    CompositeBody:
+      type: object
+      properties:
+        primitive:
+          type: string
+        composite:
+          $ref: "#/components/schemas/CompositeField"
+        primitiveList:
+          type: array
+          items:
+            type: string
+        compositeList:
+          type: array
+          items:
+            $ref: "#/components/schemas/CompositeField"
+    CompositeField:
+      properties:
+        innerField:
+          type: string
