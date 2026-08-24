@@ -7,9 +7,9 @@ servers:
   - url: http://localhost:8080
 tags:
   - name: get-by-parameters-in-query
-  - name: get-by-path-parameters
-  - name: get-by-header-parameters
-  - name: get-by-reserved-names
+  - name: get-by-parameters-in-path
+  - name: get-by-parameters-in-header
+  - name: get-by-parameters-reserved-names
   - name: post-by-request-body-primitive
   - name: post-by-request-body-composite
   - name: post-by-request-body-primitive-list
@@ -20,7 +20,7 @@ tags:
   - name: get-response-composite-list
   - name: get-response-errors
   - name: get-response-recursive
-  - name: resource-crud
+  - name: multiple-operations
 paths:
   /get/parameters/in-query:
     get:
@@ -72,18 +72,18 @@ paths:
       responses:
         200:
           description: OK
-  /get/path/{parentId}/items/{itemId}:
+  /get/parameters/in-path/{stringParam}/{longParam}:
     get:
       tags:
-        - get-by-path-parameters
-      operationId: getByPathParameters
+        - get-by-parameters-in-path
+      operationId: getByInPathParameters
       parameters:
-        - name: parentId
+        - name: stringParam
           in: path
           required: true
           schema:
             type: string
-        - name: itemId
+        - name: longParam
           in: path
           required: true
           schema:
@@ -92,30 +92,35 @@ paths:
       responses:
         200:
           description: OK
-  /get/headers:
+  /get/parameters/in-header:
     get:
       tags:
-        - get-by-header-parameters
-      operationId: getByHeaderParameters
+        - get-by-parameters-in-header
+      operationId: getByInHeaderParameters
       parameters:
-        - name: X-Request-Id
+        - name: stringHeader
           in: header
           required: true
           schema:
             type: string
-        - name: X-Optional-Flag
+        - name: booleanHeader
           in: header
           required: false
           schema:
             type: boolean
+        - name: X-Dashed-Header
+          in: header
+          required: false
+          schema:
+            type: string
       responses:
         200:
           description: OK
-  /get/reserved:
+  /get/parameters/reserved-names:
     get:
       tags:
-        - get-by-reserved-names
-      operationId: getByReservedNames
+        - get-by-parameters-reserved-names
+      operationId: getByReservedNamesParameters
       parameters:
         - name: class
           in: query
@@ -265,13 +270,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorBody'
-          description: not found
+          description: error
         500:
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorBody'
-          description: server error
+          description: error
   /get/response/recursive:
     get:
       tags:
@@ -282,32 +287,32 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RecursiveNode'
+                $ref: '#/components/schemas/RecursiveBody'
           description: recursive
-  /resource:
+  /post/multiple-operations:
     post:
       tags:
-        - resource-crud
-      operationId: createResource
+        - multiple-operations
+      operationId: postMultipleOperations
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Resource'
+              $ref: '#/components/schemas/CompositeBody'
       responses:
         201:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Resource'
-          description: created
-  /resource/{resourceId}:
+                $ref: '#/components/schemas/CompositeBody'
+          description: composite
+  /get/multiple-operations/{stringParam}:
     get:
       tags:
-        - resource-crud
-      operationId: getResource
+        - multiple-operations
+      operationId: getMultipleOperations
       parameters:
-        - name: resourceId
+        - name: stringParam
           in: path
           required: true
           schema:
@@ -317,27 +322,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Resource'
-          description: found
-        404:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorBody'
-          description: not found
+                $ref: '#/components/schemas/CompositeBody'
+          description: composite
+  /delete/multiple-operations/{stringParam}:
     delete:
       tags:
-        - resource-crud
-      operationId: deleteResource
+        - multiple-operations
+      operationId: deleteMultipleOperations
       parameters:
-        - name: resourceId
+        - name: stringParam
           in: path
           required: true
           schema:
             type: string
       responses:
         204:
-          description: deleted
+          description: OK
 components:
   schemas:
     CompositeBody:
@@ -359,10 +359,9 @@ components:
       properties:
         innerField:
           type: string
-        deep:
-          $ref: "#/components/schemas/DeepField"
-    DeepField:
-      type: object
+        deepField:
+          $ref: "#/components/schemas/CompositeDeepField"
+    CompositeDeepField:
       properties:
         deepestField:
           type: string
@@ -373,30 +372,22 @@ components:
           type: string
         message:
           type: string
-    Resource:
+    RecursiveBody:
       type: object
       properties:
-        id:
+        primitive:
           type: string
-        name:
-          type: string
-    RecursiveNode:
-      type: object
-      properties:
-        name:
-          type: string
-        child:
-          $ref: "#/components/schemas/RecursiveNode"
-        children:
+        recursive:
+          $ref: "#/components/schemas/RecursiveBody"
+        recursiveList:
           type: array
           items:
-            $ref: "#/components/schemas/RecursiveNode"
-        sibling:
-          $ref: "#/components/schemas/RecursiveSibling"
-    RecursiveSibling:
-      type: object
+            $ref: "#/components/schemas/RecursiveBody"
+        recursiveField:
+          $ref: "#/components/schemas/RecursiveField"
+    RecursiveField:
       properties:
-        label:
+        innerField:
           type: string
-        back:
-          $ref: "#/components/schemas/RecursiveNode"
+        recursive:
+          $ref: "#/components/schemas/RecursiveBody"

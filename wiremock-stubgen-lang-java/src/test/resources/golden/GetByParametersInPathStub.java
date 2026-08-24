@@ -15,55 +15,55 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathTemplate;
 
 /**
  * GOLDEN REFERENCE — hand-written specification of the generator's output.
- * Source: sample-api.yaml, tag get-by-path-parameters.
+ * Source: sample-api.yaml, tag get-by-parameters-in-path.
  *
  * <p>Demonstrates: templated paths. The predecessor project declared a urlPattern
  * field and never assigned it, so paths with parameters did not work at all.
  */
-public final class GetByPathParametersStub {
+public final class GetByParametersInPathStub {
 
     private final StubTarget target;
 
-    public GetByPathParametersStub(StubTarget target) {
+    public GetByParametersInPathStub(StubTarget target) {
         this.target = target;
     }
 
-    public GetByPathParameters getByPathParameters() {
-        return new GetByPathParameters(target);
+    public GetByInPathParameters getByInPathParameters() {
+        return new GetByInPathParameters(target);
     }
 
-    public static final class GetByPathParameters extends AbstractStub<GetByPathParameters> {
+    public static final class GetByInPathParameters extends AbstractStub<GetByInPathParameters> {
 
         /**
          * Kept as a template rather than assembled by concatenation, so that an
          * unset parameter degrades to "match any value in this segment" instead of
          * producing a broken URL.
          */
-        private static final String PATH_TEMPLATE = "/get/path/{parentId}/items/{itemId}";
+        private static final String PATH_TEMPLATE = "/get/parameters/in-path/{stringParam}/{longParam}";
 
         private final Map<String, StringValuePattern> pathParams = new LinkedHashMap<>();
         private int status = 200;
 
-        public GetByPathParameters(StubTarget target) {
+        public GetByInPathParameters(StubTarget target) {
             super(target);
         }
 
-        public GetByPathParameters parentId(String value) {
-            pathParams.put("parentId", equalTo(value));
+        public GetByInPathParameters stringParam(String value) {
+            pathParams.put("stringParam", equalTo(value));
             return self();
         }
 
-        public GetByPathParameters itemId(Long value) {
-            pathParams.put("itemId", equalTo(String.valueOf(value)));
+        public GetByInPathParameters longParam(Long value) {
+            pathParams.put("longParam", equalTo(String.valueOf(value)));
             return self();
         }
 
-        public GetByPathParameters code200() {
+        public GetByInPathParameters code200() {
             this.status = 200;
             return self();
         }
 
-        public GetByPathParameters code(int status) {
+        public GetByInPathParameters code(int status) {
             this.status = status;
             return self();
         }
@@ -92,7 +92,7 @@ public final class GetByPathParametersStub {
     // 3. Method names carry no prefix. A specification with a path parameter and
     //    a query parameter of the same name would then produce two methods with
     //    identical signatures and the class would not compile. Either prefix
-    //    everything (pathParentId, queryStringParam — verbose but predictable)
+    //    everything (pathStringParam, queryStringParam — verbose but predictable)
     //    or prefix only on collision (readable but the name depends on the rest
     //    of the operation, which makes generated code churn). Undecided.
     // ──────────────────────────────────────────────────────────────────────────
