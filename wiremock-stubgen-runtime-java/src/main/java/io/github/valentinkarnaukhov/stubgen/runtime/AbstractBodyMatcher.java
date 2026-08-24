@@ -1,0 +1,60 @@
+package io.github.valentinkarnaukhov.stubgen.runtime;
+
+import com.github.tomakehurst.wiremock.matching.StringValuePattern;
+
+import java.util.Objects;
+import java.util.function.Consumer;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
+
+/**
+ * Base class for the generated builders that constrain a request body.
+ *
+ * <p>The mirror image of {@link AbstractBodyBuilder}, and deliberately shaped the same
+ * way so that the same schema reads the same on both sides of a stub. The machinery
+ * underneath is not the same at all: a body builder writes into a model instance, whereas
+ * a matcher only ever adds a JSONPath expression. Nothing is constructed, so there is no
+ * lazy parent creation here — a matcher for a field five levels down is just a longer
+ * path.
+ *
+ * <p>Each instance carries the path it is rooted at, which is what lets one class per
+ * schema serve every position that schema occupies. Matchers accumulate: WireMock ANDs
+ * repeated request-body patterns together.
+ *
+ * @param <P> the builder or stub exit() returns to
+ */
+public abstract class AbstractBodyMatcher<P> extends AbstractBodyBuilder<P> {
+
+    private final String path;
+    private final Consumer<StringValuePattern> sink;
+
+    protected AbstractBodyMatcher(P parent, AbstractStub<?> root, String path,
+                                  Consumer<StringValuePattern> sink) {
+        super(parent, root);
+        this.path = Objects.requireNonNull(path, "path");
+        this.sink = Objects.requireNonNull(sink, "sink");
+    }
+
+    /**
+     * The JSONPath expression this matcher is rooted at — {@code $} at the top of a
+     * body, {@code $.compositeList[*]} for an element of a nested list.
+     */
+    protected final String path() {
+        return path;
+    }
+
+    /**
+     * Requires the value at a path below this one to satisfy a pattern.
+     */
+    protected final void match(String relativePath, StringValuePattern pattern) {
+        sink.accept(matchingJsonPath(path + relativePath, pattern));
+    }
+
+    /**
+     * Requires a path below this one to select at least one node. Used for the filter
+     * form, where the condition is inside the expression rather than beside it.
+     */
+    protected final void match(String relativePath) {
+        sink.accept(matchingJsonPath(path + relativePath));
+    }
+}
