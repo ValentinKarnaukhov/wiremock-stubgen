@@ -289,54 +289,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/RecursiveBody'
           description: recursive
-  /post/multiple-operations:
-    post:
-      tags:
-        - multiple-operations
-      operationId: postMultipleOperations
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CompositeBody'
-      responses:
-        201:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CompositeBody'
-          description: composite
-  /get/multiple-operations/{stringParam}:
+  /get/multiple-operations/first:
     get:
       tags:
         - multiple-operations
-      operationId: getMultipleOperations
-      parameters:
-        - name: stringParam
-          in: path
-          required: true
-          schema:
-            type: string
+      operationId: getMultipleOperationsFirst
       responses:
         200:
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CompositeBody'
-          description: composite
-  /delete/multiple-operations/{stringParam}:
-    delete:
+          description: OK
+  /get/multiple-operations/second:
+    get:
       tags:
         - multiple-operations
-      operationId: deleteMultipleOperations
-      parameters:
-        - name: stringParam
-          in: path
-          required: true
-          schema:
-            type: string
+      operationId: getMultipleOperationsSecond
       responses:
-        204:
+        200:
           description: OK
 components:
   schemas:
