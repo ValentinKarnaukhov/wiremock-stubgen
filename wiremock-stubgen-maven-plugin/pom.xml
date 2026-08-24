@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.valentinkarnaukhov</groupId>
+        <artifactId>wiremock-stubgen-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wiremock-stubgen-maven-plugin</artifactId>
+    <packaging>maven-plugin</packaging>
+    <name>wiremock-stubgen-maven-plugin</name>
+    <description>
+        Maven delivery for wiremock-stubgen. Thin wrapper: reads configuration and
+        delegates to the core and the selected language target.
+    </description>
+
+    <prerequisites>
+        <maven>3.6.3</maven>
+    </prerequisites>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.valentinkarnaukhov</groupId>
+            <artifactId>wiremock-stubgen-core</artifactId>
+        </dependency>
+        <!--
+            The Java target ships with the plugin so the default case needs no extra
+            configuration. Further languages are added by declaring them as plugin
+            dependencies; discovery happens through ServiceLoader.
+        -->
+        <dependency>
+            <groupId>io.github.valentinkarnaukhov</groupId>
+            <artifactId>wiremock-stubgen-lang-java</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-plugin-api</artifactId>
+            <version>${maven.api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-core</artifactId>
+            <version>${maven.api.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.plugin-tools</groupId>
+            <artifactId>maven-plugin-annotations</artifactId>
+            <version>${maven-plugin-tools.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-plugin-plugin</artifactId>
+                <configuration>
+                    <goalPrefix>stubgen</goalPrefix>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

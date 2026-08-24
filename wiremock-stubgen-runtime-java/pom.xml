@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.valentinkarnaukhov</groupId>
+        <artifactId>wiremock-stubgen-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wiremock-stubgen-runtime-java</artifactId>
+    <name>wiremock-stubgen-runtime-java</name>
+    <description>
+        Hand-written runtime support for generated Java stub builders. Lives on the
+        consumer's test classpath, so generated sources stay thin.
+    </description>
+
+    <dependencies>
+        <!--
+            Deliberately 'provided': the consumer supplies WireMock. This keeps us out of
+            their version decision and allows drop-in replacement with a patched or
+            internally forked WireMock build.
+        -->
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>
