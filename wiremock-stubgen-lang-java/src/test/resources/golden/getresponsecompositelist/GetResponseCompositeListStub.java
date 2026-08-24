@@ -1,10 +1,13 @@
 package com.example.stubs.getresponsecompositelist;
 
 import com.example.model.CompositeBody;
+import com.example.model.CompositeDeepField;
+import com.example.model.CompositeField;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import io.github.valentinkarnaukhov.stubgen.runtime.AbstractStub;
 import io.github.valentinkarnaukhov.stubgen.runtime.StubTarget;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -29,48 +32,103 @@ public final class GetResponseCompositeListStub extends AbstractStub<GetResponse
         return response(200, body);
     }
 
+    /**
+     * A flattened accessor: it reaches CompositeBody.composite.innerField without the
+     * caller naming CompositeField at all.
+     *
+     * <p>Recorded rather than applied, so that it works whether or not code200 has
+     * been called, and in either order.
+     *
+     * <p>The body is a list, which forces a policy the specification cannot supply:
+     * this writes to every element. Writing to the first, or to an index, would be
+     * equally defensible. The reference project always chose every element.
+     */
+    public GetResponseCompositeListStub compositeInnerField(String value) {
+        return mutateBody((List<CompositeBody> body) ->
+                body.forEach(item -> item.getComposite().innerField(value)));
+    }
+
+    /**
+     * Reached only when a flattened accessor is used without a body having been
+     * supplied. See AbstractStub#skeletonBody for why it is built lazily.
+     *
+     * <p>One element, because an accessor that writes to every element of an empty
+     * list would silently do nothing — the failure mode a generated API must not
+     * have.
+     */
+    @Override
+    protected Object skeletonBody() {
+        List<CompositeBody> body = new ArrayList<>();
+        body.add(skeletonCompositeBody());
+        return body;
+    }
+
+    /**
+     * Only nested objects are created. Collections are left alone: openapi-generator
+     * already initialises list properties to an empty list, verified on its output
+     * for this specification.
+     */
+    private static CompositeBody skeletonCompositeBody() {
+        List<CompositeField> compositeList = new ArrayList<>();
+        compositeList.add(skeletonCompositeField());
+        return new CompositeBody()
+                .composite(skeletonCompositeField())
+                .compositeList(compositeList);
+    }
+
+    private static CompositeField skeletonCompositeField() {
+        return new CompositeField().deepField(new CompositeDeepField());
+    }
+
     @Override
     protected MappingBuilder toRequest() {
         return get(urlPathEqualTo(PATH));
     }
 
-    // ── THE EXPLODE QUESTION ──────────────────────────────────────────────────
+    // ── FLATTENING: WHAT IS SETTLED, AND WHAT IS NOT ─────────────────────────
     //
-    // This is the decision the whole project turns on, and it is NOT settled.
+    // SETTLED — the accessor no longer needs a body to exist first. It records a
+    // change and AbstractStub applies it at build time, against the supplied body
+    // or against skeletonBody(). code200 and the accessors work in either order,
+    // which is what the self-type design promised everywhere else.
     //
-    // What the hand-written code in the reference project actually does is reach
-    // into the RESPONSE BODY, not the request:
+    // SETTLED — the skeleton is lazy. Built in the constructor it would change what
+    // every stub answers by default: measured on openapi-generator's own models for
+    // this specification, an eager skeleton turns the default body from
     //
-    //     public Mock withMaterialNumber(String v) {
-    //         items.forEach(dto -> dto.getNested().materialNumber(v));
-    //         return this;
-    //     }
+    //     [ { "primitiveList": [], "compositeList": [] } ]
     //
-    // Two things follow, and both are awkward.
+    // into
     //
-    // (a) Explosion mutates a body that must already exist. The accessor above is
-    //     meaningless on an empty list. So exploded setters are not an
-    //     alternative to code200(body) — they are an operation applied AFTER it,
-    //     which makes call order significant. That contradicts the self-type
-    //     design, where order is deliberately free.
+    //     [ { "composite": { "deepField": {} },
+    //         "primitiveList": [],
+    //         "compositeList": [ { "deepField": {} } ] } ]
     //
-    // (b) Collections force a policy. CompositeBody.compositeList is a list of
-    //     CompositeField. Does the exploded setter write to every element, to the
-    //     first, or to an index? The reference code always chose "every element",
-    //     but that is a domain decision, not a mechanical one.
+    // — empty nested objects and a phantom list element the service would never
+    // send, in every test that only wanted a 200.
     //
-    // A shape that would work here:
+    // SETTLED — collections are not part of the skeleton. openapi-generator already
+    // initialises list properties to an empty list; only nested objects are null.
     //
-    //     .code200(List.of(new CompositeBody()))
-    //     .compositeInnerField("x")    // -> body.forEach(b -> b.getComposite().innerField("x"))
+    // DECIDED BY FIAT, NOT DERIVED — a flattened accessor writes to every element of
+    // a list. Writing to the first, or by index, is equally defensible; the
+    // specification says nothing either way. Copied from the reference project
+    // because it is what its authors always reached for.
     //
-    // On this specification the flattened name is unambiguous. On a real one with
-    // 149 schemas it is not: two distinct paths readily produce the same flat
-    // name, and the emitter has no principled way to pick a winner.
+    // OPEN — flattened names collide. compositeInnerField is unambiguous here. On a
+    // specification with 149 schemas two distinct paths readily produce the same
+    // flat name, and there is no principled winner. Including the full path in the
+    // name would be unambiguous and unreadable.
     //
-    // Termination is a separate problem. RecursiveBody in the fixture refers to
-    // itself directly, through a list, and indirectly via RecursiveField.
-    // maxDepth caps the walk but is a workaround, not a termination condition —
-    // and swagger-parser does not inline $ref, so cycle detection is ours.
+    // OPEN — termination. RecursiveBody refers to itself directly, through a list,
+    // and indirectly via RecursiveField, so both the skeleton and the accessor walk
+    // must stop somewhere. maxDepth caps the walk but is a cap, not a termination
+    // condition. swagger-parser does not inline $ref, so cycle detection is ours in
+    // any case.
+    //
+    // OPEN — how many accessors is too many. Every leaf of every nested object
+    // becomes a method. The depth-3 chain here yields a handful; a real schema
+    // yields hundreds, and the JVM caps a class at 65535 methods long after the
+    // class stops being readable.
     // ──────────────────────────────────────────────────────────────────────────
 }

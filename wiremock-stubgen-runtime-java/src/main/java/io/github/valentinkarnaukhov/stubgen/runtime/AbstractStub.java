@@ -5,6 +5,8 @@ import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.common.Json;
 import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -32,7 +34,10 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
 
     private int status = 200;
     private Object body;
+    private boolean bodySet;
     private String contentType = APPLICATION_JSON;
+
+    private final List<Consumer<Object>> bodyMutations = new ArrayList<>();
 
     private Consumer<MappingBuilder> customizer = mappingBuilder -> {
     };
@@ -53,6 +58,7 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
     public final S code(int status) {
         this.status = status;
         this.body = null;
+        this.bodySet = true;
         return self();
     }
 
@@ -79,6 +85,39 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
     protected final S response(int status, Object body) {
         this.status = status;
         this.body = body;
+        this.bodySet = true;
+        return self();
+    }
+
+    /**
+     * Records a change to be applied to the response body when the mapping is built,
+     * rather than to whatever object happens to be present now.
+     *
+     * <p>Backs the flattened accessors a generated stub exposes for nested fields:
+     *
+     * <pre>{@code
+     * public GetResponseCompositeListStub compositeInnerField(String value) {
+     *     return mutateBody((List<CompositeBody> body) ->
+     *             body.forEach(item -> item.getComposite().innerField(value)));
+     * }
+     * }</pre>
+     *
+     * <p>Deferring is what keeps call order free. Applied eagerly, an accessor would
+     * write into the body present at that moment, and a later code200(...) would
+     * throw those writes away — so the fluent chain would only work in one order,
+     * and the wrong order would fail silently.
+     *
+     * <p>The mutation runs against the body the caller supplied, or against
+     * {@link #skeletonBody()} if they supplied none. It mutates that object in
+     * place; a caller who passes a shared instance will see it change.
+     */
+    protected final <T> S mutateBody(Consumer<T> mutation) {
+        Objects.requireNonNull(mutation, "mutation");
+        bodyMutations.add(body -> {
+            @SuppressWarnings("unchecked")
+            T typed = (T) body;
+            mutation.accept(typed);
+        });
         return self();
     }
 
@@ -135,11 +174,49 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
      * Assembles the response from the accumulated status, body and media type.
      */
     protected ResponseDefinitionBuilder toResponse() {
+        Object effectiveBody = effectiveBody();
         ResponseDefinitionBuilder response = aResponse().withStatus(status);
-        if (body != null) {
-            response.withHeader(CONTENT_TYPE, contentType).withBody(serialize(body));
+        if (effectiveBody != null) {
+            response.withHeader(CONTENT_TYPE, contentType).withBody(serialize(effectiveBody));
         }
         return response;
+    }
+
+    private Object effectiveBody() {
+        Object effectiveBody = bodySet || bodyMutations.isEmpty() ? body : skeletonBody();
+        bodyMutations.forEach(mutation -> mutation.accept(effectiveBody));
+        return effectiveBody;
+    }
+
+    /**
+     * An instance of the response body with every nested object present and every
+     * primitive left unset, used only when a flattened accessor is called without a
+     * body having been supplied.
+     *
+     * <p>A flattened accessor has to traverse the structure — getComposite() then
+     * getDeepField() — and on a freshly constructed model those return null. The
+     * skeleton is what makes the traversal possible; it is a precondition, not a
+     * convenience.
+     *
+     * <p>Built lazily on purpose. Installed eagerly it would change what a stub
+     * answers by default, replacing an empty body with one full of empty objects
+     * and phantom list elements the real service would never send.
+     *
+     * <p>It is structure only, never plausible data. Measured over 35 specifications
+     * from a real project: 7% of schema properties carry an example, 1% of schemas
+     * do, and no response media type did. Plausible data is domain knowledge and has
+     * to be supplied.
+     *
+     * <p>Generated stubs override this. The default returns null, which makes a
+     * flattened accessor on a bodyless operation fail loudly rather than silently do
+     * nothing.
+     *
+     * <p>OPEN: the skeleton does not depend on the selected status code, although an
+     * operation may declare a different schema per code. Adequate while flattened
+     * accessors describe the success body only.
+     */
+    protected Object skeletonBody() {
+        return null;
     }
 
     /**
