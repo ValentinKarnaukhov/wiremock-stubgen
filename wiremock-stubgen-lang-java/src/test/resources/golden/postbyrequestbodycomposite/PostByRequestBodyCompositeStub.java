@@ -35,11 +35,6 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
         return self();
     }
 
-    public PostByRequestBodyCompositeStub body(StringValuePattern bodyPattern) {
-        this.bodyPattern = bodyPattern;
-        return self();
-    }
-
     /** 200 declares no content, so the method takes no body. */
     public PostByRequestBodyCompositeStub code200() {
         return response(200, null);
@@ -68,6 +63,13 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
     //   - and wiremock-standalone relocates Jackson, so under that artifact the
     //     default cannot see those annotations at all.
     // Overriding serialize is the escape hatch today; a first-class hook is owed.
+    //
+    // No pattern overload for the body either — same call as for parameters, see
+    // GetByInQueryParametersStub. The body is matched by equalToJson and nothing
+    // else; a looser match goes through customize(b -> b.withRequestBody(...)).
+    // Note this one is more awkward to defer than the parameter case: equalToJson
+    // compares the whole document, so "any request whose id is 5" has no
+    // expression here at all.
     //
     // For the list variant the only difference is the parameter type:
     // body(List<CompositeBody>). Mechanical, no new decisions.

@@ -73,15 +73,6 @@ public final class GetByInQueryParametersStub extends AbstractStub<GetByInQueryP
         return self();
     }
 
-    /**
-     * Pattern overload. Without it the typed API is strictly weaker than raw
-     * WireMock: matching any value, a prefix or a regular expression is routine.
-     */
-    public GetByInQueryParametersStub queryStringParam(StringValuePattern pattern) {
-        queryParams.put("stringParam", pattern);
-        return self();
-    }
-
     /** 200 declares no content, so the method takes no body. */
     public GetByInQueryParametersStub code200() {
         return response(200, null);
@@ -94,10 +85,22 @@ public final class GetByInQueryParametersStub extends AbstractStub<GetByInQueryP
 
     // ── OPEN QUESTIONS ────────────────────────────────────────────────────────
     //
-    // 1. Pattern overloads double the method count. Written out for all seven
-    //    parameters this class would be twice its size. Options: string
-    //    parameters only, as here; all parameters; or none, relying on
-    //    customize(). Undecided.
+    // 1. No pattern overloads, for now. Every setter matches on equality, so
+    //    anything else — a regular expression, a prefix, "absent", "any value" —
+    //    is only reachable through customize():
+    //
+    //        .customize(b -> b.withQueryParam("stringParam", matching("ORD-\\d+")))
+    //
+    //    That is a real loss, and not only of convenience: the parameter name is
+    //    back as a string literal, so a rename in the specification stops being a
+    //    compile error. Keeping the name in one place is most of the reason this
+    //    generator exists.
+    //
+    //    Deferred rather than decided. An overload per parameter doubles the
+    //    method count — fourteen methods here for seven parameters — and offering
+    //    it for strings alone, as an earlier draft did, is arbitrary: matching
+    //    "\\d{3}" against an integer parameter is just as reasonable. Revisit once
+    //    there is evidence of how often patterns are actually wanted.
     //
     // 3. Enum parameters are Strings, deliberately. Verified against
     //    openapi-generator 7.9.0: an inline enum in a parameter produces no type
