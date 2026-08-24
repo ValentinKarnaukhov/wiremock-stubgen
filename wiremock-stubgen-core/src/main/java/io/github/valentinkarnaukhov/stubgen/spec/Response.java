@@ -1,4 +1,4 @@
-package io.github.valentinkarnaukhov.stubgen.ir;
+package io.github.valentinkarnaukhov.stubgen.spec;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -10,12 +10,12 @@ import java.util.Optional;
  * @param body        the response body type; {@link TypeRef.Kind#UNKNOWN} when there is no body
  * @param description free-text description from the specification, may be {@code null}
  */
-public record ResponseSpec(
+public record Response(
         Integer statusCode,
         TypeRef body,
         String description) {
 
-    public ResponseSpec {
+    public Response {
         Objects.requireNonNull(body, "body");
     }
 

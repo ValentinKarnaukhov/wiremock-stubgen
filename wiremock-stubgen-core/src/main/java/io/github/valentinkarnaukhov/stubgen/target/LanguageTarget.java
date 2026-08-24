@@ -1,6 +1,6 @@
-package io.github.valentinkarnaukhov.stubgen.spi;
+package io.github.valentinkarnaukhov.stubgen.target;
 
-import io.github.valentinkarnaukhov.stubgen.ir.StubApi;
+import io.github.valentinkarnaukhov.stubgen.spec.StubApi;
 
 import java.util.List;
 

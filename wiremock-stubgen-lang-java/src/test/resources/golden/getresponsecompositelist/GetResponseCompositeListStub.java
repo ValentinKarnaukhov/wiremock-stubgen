@@ -4,7 +4,7 @@ import com.example.model.CompositeBody;
 import com.example.model.CompositeDeepField;
 import com.example.model.CompositeField;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
-import io.github.valentinkarnaukhov.stubgen.runtime.AbstractBodyBuilder;
+import io.github.valentinkarnaukhov.stubgen.runtime.AbstractResponseBodyBuilder;
 import io.github.valentinkarnaukhov.stubgen.runtime.AbstractStub;
 import io.github.valentinkarnaukhov.stubgen.runtime.StubTarget;
 
@@ -90,7 +90,7 @@ public final class GetResponseCompositeListStub extends AbstractStub<GetResponse
      * element builder: splitting them would be tidier, but it costs an exit() per
      * element, and describing three elements would end in three of them in a row.
      */
-    public final class CompositeBodyListBuilder<P> extends AbstractBodyBuilder<P> {
+    public final class CompositeBodyListBuilder<P> extends AbstractResponseBodyBuilder<P> {
 
         private final List<CompositeBody> items;
 
@@ -181,7 +181,7 @@ public final class GetResponseCompositeListStub extends AbstractStub<GetResponse
     /**
      * Writes into the elements of the nested compositeList.
      */
-    public final class CompositeFieldListBuilder<P> extends AbstractBodyBuilder<P> {
+    public final class CompositeFieldListBuilder<P> extends AbstractResponseBodyBuilder<P> {
 
         private final List<CompositeField> items;
 
@@ -261,13 +261,23 @@ public final class GetResponseCompositeListStub extends AbstractStub<GetResponse
     // Without <P> these classes would nest concretely and exit() would name its
     // parent outright, which reads far better in compiler errors:
     // Stub.Code200.CompositeList.Rec against
-    // RecursiveBuilder<RecursiveBuilder<CompositeFieldListBuilder<...>>>. It fails
-    // on two counts. A recursive schema would need a class per level, so exit()
-    // has to skip levels and stops meaning "one up" — verified with javac, and it
-    // compiles, which makes it a silent divergence rather than an error. And a
-    // schema sitting at two positions in one operation — 7% of positions measured
-    // over 62 specifications — needs a class per position, hence a suffix in the
-    // name. Generating the concrete form only where it is safe was rejected for the
+    // RecursiveBuilder<RecursiveBuilder<CompositeFieldListBuilder<...>>>.
+    //
+    // The argument that settles it is a schema sitting at two positions in one
+    // operation — 7% of positions measured over 62 specifications. Each position
+    // needs its own class, because each has a different exit() type, so the concrete
+    // form pays in suffixed duplicates exactly where the generic form pays nothing.
+    //
+    // A recursive schema is the second count, and a weaker one than an earlier draft
+    // of this comment claimed. It only bites if the flattening cap hands out a
+    // sub-builder when it stops, because then the chain is unbounded and a concrete
+    // class per level is impossible — exit() starts skipping levels, which javac
+    // accepts, making it a silent divergence. If the cap instead just stops
+    // generating accessors, this count does not arise at all. That choice is open.
+    // Cycles are in any case 0.7% of schemas, an order of magnitude rarer than the
+    // multi-position case above.
+    //
+    // Generating the concrete form only where it is safe was rejected for the
     // reason D15 rejected prefix-on-collision: the shape of a class would then
     // depend on its neighbours in the schema graph.
     //

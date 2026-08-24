@@ -36,7 +36,7 @@ specification reader, the explode resolver and the emitter are being built.
 
 | Module | Purpose |
 |---|---|
-| `wiremock-stubgen-core` | Language-neutral: OpenAPI → internal representation, plus the `LanguageTarget` SPI |
+| `wiremock-stubgen-core` | Language-neutral: OpenAPI → a description of the API, plus the `LanguageTarget` contract |
 | `wiremock-stubgen-lang-java` | Java target: type mapping and source emission |
 | `wiremock-stubgen-runtime-java` | Hand-written runtime the generated Java code builds on |
 | `wiremock-stubgen-maven-plugin` | Maven delivery |

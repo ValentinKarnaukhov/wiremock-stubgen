@@ -98,14 +98,20 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
 
     /**
      * Requires the request body to equal the given object as JSON. Backs the generated
-     * {@code body(Schema)} method.
+     * {@code requestBody(Schema)} method.
+     *
+     * <p>Not called {@code requestBody}, which would read better, because the generated
+     * method is named that: {@code requestBody(Schema)} would be a legal overload of
+     * {@code requestBody(Object)}, and the {@code return requestBody(body)} inside it
+     * would then resolve to itself. That is a StackOverflowError at runtime rather than
+     * an error at compile time, so the name is kept apart on purpose.
      *
      * <p>Replaces rather than accumulates: two whole-document matchers describing
      * different bodies could never both hold, so a second call can only be a
      * correction of the first. The field matchers below are the opposite — each is a
      * separate condition, so they add up.
      */
-    protected final S requestBody(Object body) {
+    protected final S matchWholeRequestBody(Object body) {
         this.wholeBodyPattern = equalToJson(serialize(body));
         return self();
     }

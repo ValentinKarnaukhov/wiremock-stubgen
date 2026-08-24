@@ -1,4 +1,4 @@
-package io.github.valentinkarnaukhov.stubgen.ir;
+package io.github.valentinkarnaukhov.stubgen.spec;
 
 import java.util.List;
 import java.util.Objects;
@@ -22,7 +22,7 @@ public record Operation(
         HttpMethod method,
         List<Parameter> parameters,
         TypeRef requestBody,
-        List<ResponseSpec> responses) {
+        List<Response> responses) {
 
     public Operation {
         Objects.requireNonNull(operationId, "operationId");

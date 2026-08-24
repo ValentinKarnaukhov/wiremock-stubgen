@@ -1,9 +1,9 @@
 package io.github.valentinkarnaukhov.stubgen.maven;
 
-import io.github.valentinkarnaukhov.stubgen.spi.GeneratedFile;
-import io.github.valentinkarnaukhov.stubgen.spi.LanguageTarget;
-import io.github.valentinkarnaukhov.stubgen.spi.LanguageTargets;
-import io.github.valentinkarnaukhov.stubgen.spi.TargetOptions;
+import io.github.valentinkarnaukhov.stubgen.target.GeneratedFile;
+import io.github.valentinkarnaukhov.stubgen.target.LanguageTarget;
+import io.github.valentinkarnaukhov.stubgen.target.LanguageTargets;
+import io.github.valentinkarnaukhov.stubgen.target.TargetOptions;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -78,7 +78,7 @@ public class GenerateMojo extends AbstractMojo {
 
         getLog().info("Generating %s stubs from %s".formatted(target.displayName(), inputSpec));
 
-        // Reading the spec into the IR arrives with the parser stage; until then the
+        // Reading the specification arrives with the parser stage; until then the
         // pipeline is wired but produces nothing.
         List<GeneratedFile> files = List.of();
 

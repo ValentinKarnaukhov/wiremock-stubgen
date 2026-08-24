@@ -1,4 +1,4 @@
-package io.github.valentinkarnaukhov.stubgen.spi;
+package io.github.valentinkarnaukhov.stubgen.target;
 
 import java.util.ArrayList;
 import java.util.Comparator;

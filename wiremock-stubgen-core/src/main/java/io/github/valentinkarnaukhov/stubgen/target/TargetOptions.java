@@ -1,4 +1,4 @@
-package io.github.valentinkarnaukhov.stubgen.spi;
+package io.github.valentinkarnaukhov.stubgen.target;
 
 import java.util.Map;
 import java.util.Objects;

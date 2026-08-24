@@ -1,4 +1,4 @@
-package io.github.valentinkarnaukhov.stubgen.ir;
+package io.github.valentinkarnaukhov.stubgen.spec;
 
 import java.util.Objects;
 import java.util.Optional;

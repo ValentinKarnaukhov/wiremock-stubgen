@@ -13,8 +13,8 @@
     <artifactId>wiremock-stubgen-core</artifactId>
     <name>wiremock-stubgen-core</name>
     <description>
-        Language-neutral core: reads OpenAPI specifications into an internal representation (IR)
-        and defines the SPI that language targets implement. Contains no Java-target specifics.
+        Language-neutral core: reads OpenAPI specifications into a description of what they say,
+        and defines the contract language targets implement. Contains no Java-target specifics.
     </description>
 
     <dependencies>

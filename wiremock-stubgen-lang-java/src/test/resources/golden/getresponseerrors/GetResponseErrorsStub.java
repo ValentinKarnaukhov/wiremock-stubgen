@@ -5,7 +5,7 @@ import com.example.model.CompositeDeepField;
 import com.example.model.CompositeField;
 import com.example.model.ErrorBody;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
-import io.github.valentinkarnaukhov.stubgen.runtime.AbstractBodyBuilder;
+import io.github.valentinkarnaukhov.stubgen.runtime.AbstractResponseBodyBuilder;
 import io.github.valentinkarnaukhov.stubgen.runtime.AbstractStub;
 import io.github.valentinkarnaukhov.stubgen.runtime.StubTarget;
 
@@ -89,7 +89,7 @@ public final class GetResponseErrorsStub extends AbstractStub<GetResponseErrorsS
     // because that stub's copy is not in scope here. Locality was preferred to
     // sharing deliberately — one operation, one file.
 
-    public final class CompositeBodyBuilder<P> extends AbstractBodyBuilder<P> {
+    public final class CompositeBodyBuilder<P> extends AbstractResponseBodyBuilder<P> {
 
         private final CompositeBody body;
 
@@ -141,7 +141,7 @@ public final class GetResponseErrorsStub extends AbstractStub<GetResponseErrorsS
         }
     }
 
-    public final class CompositeFieldListBuilder<P> extends AbstractBodyBuilder<P> {
+    public final class CompositeFieldListBuilder<P> extends AbstractResponseBodyBuilder<P> {
 
         private final List<CompositeField> items;
 
@@ -188,7 +188,7 @@ public final class GetResponseErrorsStub extends AbstractStub<GetResponseErrorsS
      * Note code(String): on the stub that name belongs to the status code, and here
      * it belongs to a field. Nesting keeps the two apart without renaming either.
      */
-    public final class ErrorBodyBuilder<P> extends AbstractBodyBuilder<P> {
+    public final class ErrorBodyBuilder<P> extends AbstractResponseBodyBuilder<P> {
 
         private final ErrorBody body;
 

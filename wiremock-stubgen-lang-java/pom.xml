@@ -13,7 +13,7 @@
     <artifactId>wiremock-stubgen-lang-java</artifactId>
     <name>wiremock-stubgen-lang-java</name>
     <description>
-        Java language target: maps the language-neutral IR onto Java types and emits
+        Java language target: maps the language-neutral description onto Java types and emits
         WireMock stub builder sources. Discovered via ServiceLoader.
     </description>
 
