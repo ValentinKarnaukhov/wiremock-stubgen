@@ -16,7 +16,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
  * GOLDEN REFERENCE — hand-written specification of the generator's output.
  * Source: sample-api.yaml, operation getByInQueryParameters.
  *
- * <p>Demonstrates: every primitive query parameter type, plus an inline enum.
+ * <p>Demonstrates: every primitive query parameter type, and why an inline enum
+ * is not one of them.
  */
 public final class GetByInQueryParametersStub extends AbstractStub<GetByInQueryParametersStub> {
 
@@ -61,8 +62,14 @@ public final class GetByInQueryParametersStub extends AbstractStub<GetByInQueryP
         return self();
     }
 
-    public GetByInQueryParametersStub queryEnumParam(QueryEnumParam value) {
-        queryParams.put("enumParam", equalTo(value.value()));
+    /**
+     * String, not a generated enum. openapi-generator renders an inline enum
+     * parameter as a plain String in every Java client library, so there is no
+     * enum type to reuse — and inventing one here would make the consumer convert
+     * between our type and the String their own client hands them.
+     */
+    public GetByInQueryParametersStub queryEnumParam(String value) {
+        queryParams.put("enumParam", equalTo(value));
         return self();
     }
 
@@ -85,36 +92,23 @@ public final class GetByInQueryParametersStub extends AbstractStub<GetByInQueryP
         return get(urlPathEqualTo(PATH)).withQueryParams(queryParams);
     }
 
-    /**
-     * Inline enum from the specification. Nested, because it belongs to one
-     * parameter of one operation and would collide at package level.
-     *
-     * <p>Nesting is used only here — for types that have no meaning outside the
-     * operation. Operations themselves are separate top-level classes, so that a
-     * tag with forty operations does not become one unreadable file.
-     */
-    public enum QueryEnumParam {
-
-        ENUM_VALUE1("EnumValue1"),
-        ENUM_VALUE2("EnumValue2");
-
-        private final String value;
-
-        QueryEnumParam(String value) {
-            this.value = value;
-        }
-
-        public String value() {
-            return value;
-        }
-    }
-
     // ── OPEN QUESTIONS ────────────────────────────────────────────────────────
     //
     // 1. Pattern overloads double the method count. Written out for all seven
     //    parameters this class would be twice its size. Options: string
     //    parameters only, as here; all parameters; or none, relying on
     //    customize(). Undecided.
+    //
+    // 3. Enum parameters are Strings, deliberately. Verified against
+    //    openapi-generator 7.9.0: an inline enum in a parameter produces no type
+    //    at all — resttemplate, webclient, native and okhttp-gson all render it as
+    //    String. An enum inside a SCHEMA is different: it is generated, nested in
+    //    the model (ErrorBody.EnumFieldEnum), and we reference that rather than
+    //    duplicate it. So the rule is not "no enums", it is "no types we would be
+    //    the only ones to have".
+    //
+    //    The cost is real: nothing stops an invalid value, and the specification's
+    //    permitted values survive only as documentation. Revisit if it bites.
     //
     // 2. Optional versus required. Every parameter here is required:false, and
     //    the generated code treats absence as "do not match on it". A required

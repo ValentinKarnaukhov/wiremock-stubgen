@@ -69,8 +69,9 @@ public final class GetByInPathParametersStub extends AbstractStub<GetByInPathPar
     //    that produces two methods with identical signatures and the class does not
     //    compile. Prefixing only on collision would keep names shorter, but then a
     //    name depends on the rest of the operation, so unrelated edits to the
-    //    specification churn the generated code. Types derived from a parameter are
-    //    prefixed for the same reason: see QueryEnumParam.
+    //    specification churn the generated code. The rule covers any type we derive
+    //    from a parameter too, should one ever appear — today none does, since
+    //    enum parameters are Strings.
     //
     // 3. Nothing here builds the response. Status, body, media type, serialisation
     //    and code(int) live in AbstractStub, which is why toRequest returns a bare
