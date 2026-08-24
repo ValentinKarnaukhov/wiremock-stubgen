@@ -6,7 +6,6 @@ import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import io.github.valentinkarnaukhov.stubgen.runtime.AbstractStub;
 import io.github.valentinkarnaukhov.stubgen.runtime.StubTarget;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
@@ -21,30 +20,16 @@ public final class GetResponseErrorsStub extends AbstractStub<GetResponseErrorsS
 
     private static final String PATH = "/get/response/errors";
 
-    private int status = 200;
-
-    /**
-     * Erased to Object because the declared bodies have no common supertype:
-     * CompositeBody and ErrorBody are unrelated generated models. The field is
-     * private and is only ever written through a typed codeNNN method, so the
-     * type safety the user sees is unaffected — the erasure never reaches the API.
-     */
-    private Object body;
-
     public GetResponseErrorsStub(StubTarget target) {
         super(target);
     }
 
     public GetResponseErrorsStub code200(CompositeBody body) {
-        this.status = 200;
-        this.body = body;
-        return self();
+        return response(200, body);
     }
 
     public GetResponseErrorsStub code404(ErrorBody body) {
-        this.status = 404;
-        this.body = body;
-        return self();
+        return response(404, body);
     }
 
     /**
@@ -53,25 +38,12 @@ public final class GetResponseErrorsStub extends AbstractStub<GetResponseErrorsS
      * generated API keeps the shape of the specification.
      */
     public GetResponseErrorsStub code500(ErrorBody body) {
-        this.status = 500;
-        this.body = body;
-        return self();
-    }
-
-    /** Undeclared status codes carry no typed body by definition. */
-    public GetResponseErrorsStub code(int status) {
-        this.status = status;
-        this.body = null;
-        return self();
+        return response(500, body);
     }
 
     @Override
-    protected MappingBuilder toMappingBuilder() {
-        return get(urlPathEqualTo(PATH))
-                .willReturn(aResponse()
-                        .withStatus(status)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(Json.write(body)));
+    protected MappingBuilder toRequest() {
+        return get(urlPathEqualTo(PATH));
     }
 
     // ── NOTES ─────────────────────────────────────────────────────────────────
@@ -106,14 +78,17 @@ public final class GetResponseErrorsStub extends AbstractStub<GetResponseErrorsS
     // and the fixture does not cover it yet.
     //
     // OPEN — CONTENT TYPE.
-    // Content-Type is hard-coded to application/json because every response in the
-    // fixture declares exactly that. An operation declaring text/plain, or several
-    // media types for one code, is uncovered; the type would have to come from the
-    // specification, and for a non-JSON type Json.write is simply wrong.
+    // AbstractStub defaults to application/json, which every response in the
+    // fixture declares. For anything else the generated code would call
+    // contentType(...) — but serialisation would then also have to stop being JSON,
+    // and an operation declaring several media types for one code has no obvious
+    // shape at all. Uncovered by the fixture.
     //
     // OPEN — NO RESPONSE SELECTED.
-    // If the user calls neither codeNNN nor code, the stub returns 200 with a null
-    // body, which serialises to the literal "null". Whether the default should
-    // instead be an empty body, or a build-time failure, is undecided.
+    // If the user calls neither codeNNN nor code, AbstractStub answers 200 with no
+    // body at all. That is defensible for an operation whose 200 declares no
+    // content, and misleading for this one, where 200 declares CompositeBody and
+    // the client will fail to deserialise nothing. Whether an unset body should be
+    // a failure when the selected code declares a schema is undecided.
     // ──────────────────────────────────────────────────────────────────────────
 }

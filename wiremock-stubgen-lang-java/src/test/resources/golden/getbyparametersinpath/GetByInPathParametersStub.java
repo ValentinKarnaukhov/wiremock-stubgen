@@ -8,7 +8,6 @@ import io.github.valentinkarnaukhov.stubgen.runtime.StubTarget;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathTemplate;
@@ -30,7 +29,6 @@ public final class GetByInPathParametersStub extends AbstractStub<GetByInPathPar
     private static final String PATH_TEMPLATE = "/get/parameters/in-path/{stringParam}/{longParam}";
 
     private final Map<String, StringValuePattern> pathParams = new LinkedHashMap<>();
-    private int status = 200;
 
     public GetByInPathParametersStub(StubTarget target) {
         super(target);
@@ -46,21 +44,16 @@ public final class GetByInPathParametersStub extends AbstractStub<GetByInPathPar
         return self();
     }
 
+    /** 200 declares no content, so the method takes no body. */
     public GetByInPathParametersStub code200() {
-        this.status = 200;
-        return self();
-    }
-
-    public GetByInPathParametersStub code(int status) {
-        this.status = status;
-        return self();
+        return response(200, null);
     }
 
     @Override
-    protected MappingBuilder toMappingBuilder() {
-        MappingBuilder mappingBuilder = get(urlPathTemplate(PATH_TEMPLATE));
-        pathParams.forEach(mappingBuilder::withPathParam);
-        return mappingBuilder.willReturn(aResponse().withStatus(status));
+    protected MappingBuilder toRequest() {
+        MappingBuilder request = get(urlPathTemplate(PATH_TEMPLATE));
+        pathParams.forEach(request::withPathParam);
+        return request;
     }
 
     // ── NOTES ─────────────────────────────────────────────────────────────────
@@ -78,5 +71,10 @@ public final class GetByInPathParametersStub extends AbstractStub<GetByInPathPar
     //    name depends on the rest of the operation, so unrelated edits to the
     //    specification churn the generated code. Types derived from a parameter are
     //    prefixed for the same reason: see QueryEnumParam.
+    //
+    // 3. Nothing here builds the response. Status, body, media type, serialisation
+    //    and code(int) live in AbstractStub, which is why toRequest returns a bare
+    //    matcher. Only the typed per-code methods are generated, and each is a
+    //    single delegation to response(status, body).
     // ──────────────────────────────────────────────────────────────────────────
 }

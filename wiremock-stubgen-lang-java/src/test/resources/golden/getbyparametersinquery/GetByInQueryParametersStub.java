@@ -8,7 +8,6 @@ import io.github.valentinkarnaukhov.stubgen.runtime.StubTarget;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
@@ -24,7 +23,6 @@ public final class GetByInQueryParametersStub extends AbstractStub<GetByInQueryP
     private static final String PATH = "/get/parameters/in-query";
 
     private final Map<String, StringValuePattern> queryParams = new LinkedHashMap<>();
-    private int status = 200;
 
     public GetByInQueryParametersStub(StubTarget target) {
         super(target);
@@ -77,22 +75,14 @@ public final class GetByInQueryParametersStub extends AbstractStub<GetByInQueryP
         return self();
     }
 
+    /** 200 declares no content, so the method takes no body. */
     public GetByInQueryParametersStub code200() {
-        this.status = 200;
-        return self();
-    }
-
-    /** Status codes the specification does not declare, for negative testing. */
-    public GetByInQueryParametersStub code(int status) {
-        this.status = status;
-        return self();
+        return response(200, null);
     }
 
     @Override
-    protected MappingBuilder toMappingBuilder() {
-        return get(urlPathEqualTo(PATH))
-                .withQueryParams(queryParams)
-                .willReturn(aResponse().withStatus(status));
+    protected MappingBuilder toRequest() {
+        return get(urlPathEqualTo(PATH)).withQueryParams(queryParams);
     }
 
     /**

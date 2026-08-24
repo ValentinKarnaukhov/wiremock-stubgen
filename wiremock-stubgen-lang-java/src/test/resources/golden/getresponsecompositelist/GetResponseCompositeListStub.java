@@ -5,10 +5,8 @@ import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import io.github.valentinkarnaukhov.stubgen.runtime.AbstractStub;
 import io.github.valentinkarnaukhov.stubgen.runtime.StubTarget;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
@@ -22,34 +20,18 @@ public final class GetResponseCompositeListStub extends AbstractStub<GetResponse
 
     private static final String PATH = "/get/response/composite/list";
 
-    private int status = 200;
-    private List<CompositeBody> body = new ArrayList<>();
-
     public GetResponseCompositeListStub(StubTarget target) {
         super(target);
     }
 
     /** Typed because the specification says 200 returns exactly this. */
     public GetResponseCompositeListStub code200(List<CompositeBody> body) {
-        this.status = 200;
-        this.body = body;
-        return self();
-    }
-
-    /** Undeclared status codes carry no typed body by definition. */
-    public GetResponseCompositeListStub code(int status) {
-        this.status = status;
-        this.body = null;
-        return self();
+        return response(200, body);
     }
 
     @Override
-    protected MappingBuilder toMappingBuilder() {
-        return get(urlPathEqualTo(PATH))
-                .willReturn(aResponse()
-                        .withStatus(status)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(Json.write(body)));
+    protected MappingBuilder toRequest() {
+        return get(urlPathEqualTo(PATH));
     }
 
     // ── THE EXPLODE QUESTION ──────────────────────────────────────────────────

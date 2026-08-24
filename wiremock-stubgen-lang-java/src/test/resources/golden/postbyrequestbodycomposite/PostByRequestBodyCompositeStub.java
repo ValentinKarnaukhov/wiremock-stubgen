@@ -6,7 +6,6 @@ import com.github.tomakehurst.wiremock.matching.StringValuePattern;
 import io.github.valentinkarnaukhov.stubgen.runtime.AbstractStub;
 import io.github.valentinkarnaukhov.stubgen.runtime.StubTarget;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
@@ -22,7 +21,6 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
     private static final String PATH = "/post/request-body/composite";
 
     private StringValuePattern bodyPattern;
-    private int status = 200;
 
     public PostByRequestBodyCompositeStub(StubTarget target) {
         super(target);
@@ -33,7 +31,7 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
      * openapi-generator. We only reference it — see the modelPackage option.
      */
     public PostByRequestBodyCompositeStub body(CompositeBody body) {
-        this.bodyPattern = equalToJson(Json.write(body));
+        this.bodyPattern = equalToJson(serialize(body));
         return self();
     }
 
@@ -42,36 +40,34 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
         return self();
     }
 
+    /** 200 declares no content, so the method takes no body. */
     public PostByRequestBodyCompositeStub code200() {
-        this.status = 200;
-        return self();
-    }
-
-    public PostByRequestBodyCompositeStub code(int status) {
-        this.status = status;
-        return self();
+        return response(200, null);
     }
 
     @Override
-    protected MappingBuilder toMappingBuilder() {
-        MappingBuilder mappingBuilder = post(urlPathEqualTo(PATH));
+    protected MappingBuilder toRequest() {
+        MappingBuilder request = post(urlPathEqualTo(PATH));
         if (bodyPattern != null) {
-            mappingBuilder.withRequestBody(bodyPattern);
+            request.withRequestBody(bodyPattern);
         }
-        return mappingBuilder.willReturn(aResponse().withStatus(status));
+        return request;
     }
 
     // ── OPEN QUESTION ─────────────────────────────────────────────────────────
     //
-    // Serialisation. Json.write(body) above is a placeholder. Whose ObjectMapper?
-    //   - WireMock ships com.github.tomakehurst.wiremock.common.Json, but its
-    //     configuration is not ours and may not match the consumer's client.
-    //   - The consumer's models carry Jackson annotations from openapi-generator
-    //     (date formats, @JsonInclude, naming); serialising with a different
-    //     mapper produces a body that will not match what the client sends.
-    //   - Likeliest answer: a mapper supplied through StubTarget or a runtime
-    //     hook, defaulting to a sane one. A runtime concern, recorded and
-    //     deferred.
+    // Serialisation. serialize(body) is AbstractStub's, so the request matcher and
+    // the response body go through one mapper — the alternative is a stub that
+    // reads and writes JSON in two different dialects. Which mapper that should be
+    // is still open:
+    //   - the default delegates to WireMock's own Json, whose configuration is not
+    //     ours and need not match the consumer's client;
+    //   - the consumer's models carry Jackson annotations from openapi-generator
+    //     (date formats, @JsonInclude, naming) that a foreign mapper will not
+    //     honour, producing a body the client would never send;
+    //   - and wiremock-standalone relocates Jackson, so under that artifact the
+    //     default cannot see those annotations at all.
+    // Overriding serialize is the escape hatch today; a first-class hook is owed.
     //
     // For the list variant the only difference is the parameter type:
     // body(List<CompositeBody>). Mechanical, no new decisions.
