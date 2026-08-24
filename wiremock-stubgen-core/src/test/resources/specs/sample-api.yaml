@@ -7,6 +7,9 @@ servers:
   - url: http://localhost:8080
 tags:
   - name: get-by-parameters-in-query
+  - name: get-by-path-parameters
+  - name: get-by-header-parameters
+  - name: get-by-reserved-names
   - name: post-by-request-body-primitive
   - name: post-by-request-body-composite
   - name: post-by-request-body-primitive-list
@@ -15,6 +18,9 @@ tags:
   - name: get-response-composite
   - name: get-response-primitive-list
   - name: get-response-composite-list
+  - name: get-response-errors
+  - name: get-response-recursive
+  - name: resource-crud
 paths:
   /get/parameters/in-query:
     get:
@@ -63,6 +69,74 @@ paths:
             enum:
             - EnumValue1
             - EnumValue2
+      responses:
+        200:
+          description: OK
+  /get/path/{parentId}/items/{itemId}:
+    get:
+      tags:
+        - get-by-path-parameters
+      operationId: getByPathParameters
+      parameters:
+        - name: parentId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        200:
+          description: OK
+  /get/headers:
+    get:
+      tags:
+        - get-by-header-parameters
+      operationId: getByHeaderParameters
+      parameters:
+        - name: X-Request-Id
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: X-Optional-Flag
+          in: header
+          required: false
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: OK
+  /get/reserved:
+    get:
+      tags:
+        - get-by-reserved-names
+      operationId: getByReservedNames
+      parameters:
+        - name: class
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: customize
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: mock
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         200:
           description: OK
@@ -174,6 +248,96 @@ paths:
                 items:
                   $ref: '#/components/schemas/CompositeBody'
           description: compositeList
+  /get/response/errors:
+    get:
+      tags:
+        - get-response-errors
+      operationId: getResponseErrors
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompositeBody'
+          description: composite
+        404:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+          description: not found
+        500:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+          description: server error
+  /get/response/recursive:
+    get:
+      tags:
+        - get-response-recursive
+      operationId: getResponseRecursive
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecursiveNode'
+          description: recursive
+  /resource:
+    post:
+      tags:
+        - resource-crud
+      operationId: createResource
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Resource'
+      responses:
+        201:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+          description: created
+  /resource/{resourceId}:
+    get:
+      tags:
+        - resource-crud
+      operationId: getResource
+      parameters:
+        - name: resourceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resource'
+          description: found
+        404:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+          description: not found
+    delete:
+      tags:
+        - resource-crud
+      operationId: deleteResource
+      parameters:
+        - name: resourceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: deleted
 components:
   schemas:
     CompositeBody:
@@ -195,3 +359,44 @@ components:
       properties:
         innerField:
           type: string
+        deep:
+          $ref: "#/components/schemas/DeepField"
+    DeepField:
+      type: object
+      properties:
+        deepestField:
+          type: string
+    ErrorBody:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    Resource:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    RecursiveNode:
+      type: object
+      properties:
+        name:
+          type: string
+        child:
+          $ref: "#/components/schemas/RecursiveNode"
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecursiveNode"
+        sibling:
+          $ref: "#/components/schemas/RecursiveSibling"
+    RecursiveSibling:
+      type: object
+      properties:
+        label:
+          type: string
+        back:
+          $ref: "#/components/schemas/RecursiveNode"
