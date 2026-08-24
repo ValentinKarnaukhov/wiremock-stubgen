@@ -33,37 +33,37 @@ public final class GetByInQueryParametersStub extends AbstractStub<GetByInQueryP
     // Typed setters. The type comes from the schema; the value always ends up as
     // a string, because that is what an HTTP query parameter is.
 
-    public GetByInQueryParametersStub stringParam(String value) {
+    public GetByInQueryParametersStub queryStringParam(String value) {
         queryParams.put("stringParam", equalTo(value));
         return self();
     }
 
-    public GetByInQueryParametersStub integerParam(Integer value) {
+    public GetByInQueryParametersStub queryIntegerParam(Integer value) {
         queryParams.put("integerParam", equalTo(String.valueOf(value)));
         return self();
     }
 
-    public GetByInQueryParametersStub longParam(Long value) {
+    public GetByInQueryParametersStub queryLongParam(Long value) {
         queryParams.put("longParam", equalTo(String.valueOf(value)));
         return self();
     }
 
-    public GetByInQueryParametersStub booleanParam(Boolean value) {
+    public GetByInQueryParametersStub queryBooleanParam(Boolean value) {
         queryParams.put("booleanParam", equalTo(String.valueOf(value)));
         return self();
     }
 
-    public GetByInQueryParametersStub floatParam(Float value) {
+    public GetByInQueryParametersStub queryFloatParam(Float value) {
         queryParams.put("floatParam", equalTo(String.valueOf(value)));
         return self();
     }
 
-    public GetByInQueryParametersStub doubleParam(Double value) {
+    public GetByInQueryParametersStub queryDoubleParam(Double value) {
         queryParams.put("doubleParam", equalTo(String.valueOf(value)));
         return self();
     }
 
-    public GetByInQueryParametersStub enumParam(EnumParam value) {
+    public GetByInQueryParametersStub queryEnumParam(QueryEnumParam value) {
         queryParams.put("enumParam", equalTo(value.value()));
         return self();
     }
@@ -72,7 +72,7 @@ public final class GetByInQueryParametersStub extends AbstractStub<GetByInQueryP
      * Pattern overload. Without it the typed API is strictly weaker than raw
      * WireMock: matching any value, a prefix or a regular expression is routine.
      */
-    public GetByInQueryParametersStub stringParam(StringValuePattern pattern) {
+    public GetByInQueryParametersStub queryStringParam(StringValuePattern pattern) {
         queryParams.put("stringParam", pattern);
         return self();
     }
@@ -103,14 +103,14 @@ public final class GetByInQueryParametersStub extends AbstractStub<GetByInQueryP
      * operation. Operations themselves are separate top-level classes, so that a
      * tag with forty operations does not become one unreadable file.
      */
-    public enum EnumParam {
+    public enum QueryEnumParam {
 
         ENUM_VALUE1("EnumValue1"),
         ENUM_VALUE2("EnumValue2");
 
         private final String value;
 
-        EnumParam(String value) {
+        QueryEnumParam(String value) {
             this.value = value;
         }
 

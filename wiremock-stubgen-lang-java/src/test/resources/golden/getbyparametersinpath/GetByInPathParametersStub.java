@@ -36,12 +36,12 @@ public final class GetByInPathParametersStub extends AbstractStub<GetByInPathPar
         super(target);
     }
 
-    public GetByInPathParametersStub stringParam(String value) {
+    public GetByInPathParametersStub pathStringParam(String value) {
         pathParams.put("stringParam", equalTo(value));
         return self();
     }
 
-    public GetByInPathParametersStub longParam(Long value) {
+    public GetByInPathParametersStub pathLongParam(Long value) {
         pathParams.put("longParam", equalTo(String.valueOf(value)));
         return self();
     }
@@ -70,12 +70,13 @@ public final class GetByInPathParametersStub extends AbstractStub<GetByInPathPar
     //    place where "WireMock 3 only" stops being a preference and becomes a
     //    hard constraint on the generated code.
     //
-    // 2. Method names carry no prefix. A specification with a path parameter and
-    //    a query parameter of the same name would then produce two methods with
-    //    identical signatures and the class would not compile. Either prefix
-    //    everything (pathStringParam, queryStringParam — verbose but predictable)
-    //    or prefix only on collision (readable, but the name then depends on the
-    //    rest of the operation, so generated code churns when the spec changes).
-    //    Undecided.
+    // 2. Method names carry the parameter's location as a prefix — pathStringParam,
+    //    queryStringParam, headerXRequestId. A specification is free to declare a
+    //    path parameter and a query parameter of the same name; without the prefix
+    //    that produces two methods with identical signatures and the class does not
+    //    compile. Prefixing only on collision would keep names shorter, but then a
+    //    name depends on the rest of the operation, so unrelated edits to the
+    //    specification churn the generated code. Types derived from a parameter are
+    //    prefixed for the same reason: see QueryEnumParam.
     // ──────────────────────────────────────────────────────────────────────────
 }
