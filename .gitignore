@@ -10,3 +10,6 @@ build/
 
 .DS_Store
 *.log
+
+# Local working notes: never committed, contents may reference internal sources
+/tmp/
