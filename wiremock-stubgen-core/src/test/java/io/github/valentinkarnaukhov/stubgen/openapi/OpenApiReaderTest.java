@@ -35,7 +35,7 @@ class OpenApiReaderTest {
     @Test
     void readsEveryOperationWithoutComplaining() {
         assertThat(api.title()).isEqualTo("wiremock-stub-generator test swagger");
-        assertThat(api.operations()).hasSize(16);
+        assertThat(api.operations()).hasSize(17);
         assertThat(warnings).isEmpty();
     }
 
@@ -173,7 +173,8 @@ class OpenApiReaderTest {
         // components block.
         assertThat(api.reachableSchemas()).containsOnlyKeys(
                 "CompositeBody", "CompositeField", "CompositeDeepField",
-                "ErrorBody", "RecursiveBody", "RecursiveField");
+                "ErrorBody", "RecursiveBody", "RecursiveField",
+                "ReservedNamesBody", "ReservedNamesItem");
     }
 
     @Test

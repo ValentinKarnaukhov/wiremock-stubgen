@@ -20,6 +20,7 @@ tags:
   - name: get-response-composite-list
   - name: get-response-errors
   - name: get-response-recursive
+  - name: get-response-reserved-names
   - name: multiple-operations
 paths:
   /get/parameters/in-query:
@@ -289,6 +290,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/RecursiveBody'
           description: recursive
+  /get/response/reserved-names:
+    get:
+      tags:
+        - get-response-reserved-names
+      operationId: getResponseReservedNames
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservedNamesBody'
+          description: properties whose names collide with the runtime base class
   /get/multiple-operations/first:
     get:
       tags:
@@ -358,3 +371,31 @@ components:
           type: string
         recursive:
           $ref: "#/components/schemas/RecursiveBody"
+    # Properties named after methods the generated scope inherits from the runtime.
+    # Reserved names were previously covered only as operation parameters, which stopped
+    # being the dangerous case once bodies moved off the stub and onto builders.
+    ReservedNamesBody:
+      type: object
+      properties:
+        # One argument: a legal overload of the final exit(), so this compiles and only
+        # reads badly.
+        exit:
+          type: string
+        mock:
+          type: string
+        # Zero arguments: identical signature to the final exit(), a compile error.
+        addNew:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReservedNamesItem"
+        # Flattening rescues the same name by prefixing it: safeExit, not exit.
+        safe:
+          $ref: "#/components/schemas/ReservedNamesItem"
+        x-dashed-property:
+          type: string
+    ReservedNamesItem:
+      properties:
+        exit:
+          type: string
+        innerField:
+          type: string
