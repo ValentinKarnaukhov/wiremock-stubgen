@@ -34,7 +34,7 @@ public record BodyModel(BodySide side, String rootSchema, boolean rootIsList, Li
     /** The scope a nested-list accessor hands out. */
     public Optional<BodyScope> target(Accessor accessor) {
         return accessor.targetSchemaIfPresent()
-                .flatMap(schema -> scope(schema, side == BodySide.RESPONSE));
+                .flatMap(schema -> scope(schema, side.distinguishesPosition()));
     }
 
     public Optional<BodyScope> scope(String schemaName, boolean listPosition) {

@@ -16,6 +16,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * Checks the flattener against the rules the golden stubs were written to.
@@ -63,6 +64,24 @@ class FlattenerTest {
         assertThat(primitiveList.kind()).isEqualTo(Accessor.Kind.VALUE_LIST);
         assertThat(primitiveList.type().openApiType()).isEqualTo("string");
         assertThat(primitiveList.targetSchemaIfPresent()).isEmpty();
+    }
+
+    @Test
+    void recordsTheObjectsAnAccessorReachesThroughSoABuilderCanCreateThem() {
+        BodyScope root = flatten(compositeBodyList(), BodySide.RESPONSE).root();
+
+        assertThat(root.intermediates())
+                .describedAs("in the order a builder has to create them: outer before inner")
+                .extracting(Intermediate::name, Intermediate::schemaName)
+                .containsExactly(
+                        tuple("composite", "CompositeField"),
+                        tuple("compositeDeepField", "CompositeDeepField"));
+
+        assertThat(root.parentOf(accessor(root, "compositeDeepFieldDeepestField")).orElseThrow().name())
+                .isEqualTo("compositeDeepField");
+        assertThat(root.parentOf(accessor(root, "primitive")))
+                .describedAs("a property of the scope's own schema stands on nothing")
+                .isEmpty();
     }
 
     @Test

@@ -23,4 +23,25 @@
             <artifactId>swagger-parser</artifactId>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+                The fixture specification and the reader are used by the language targets'
+                own tests: a golden comparison has to start from the same specification the
+                goldens were written against, and copying it would let the two drift.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

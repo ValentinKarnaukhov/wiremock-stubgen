@@ -103,11 +103,6 @@ public final class GetResponseErrorsStub extends AbstractStub<GetResponseErrorsS
             return this;
         }
 
-        public CompositeBodyBuilder<P> primitiveList(List<String> value) {
-            body.primitiveList(value);
-            return this;
-        }
-
         public CompositeBodyBuilder<P> compositeInnerField(String value) {
             composite().innerField(value);
             return this;
@@ -115,6 +110,11 @@ public final class GetResponseErrorsStub extends AbstractStub<GetResponseErrorsS
 
         public CompositeBodyBuilder<P> compositeDeepFieldDeepestField(String value) {
             compositeDeepField().deepestField(value);
+            return this;
+        }
+
+        public CompositeBodyBuilder<P> primitiveList(List<String> value) {
+            body.primitiveList(value);
             return this;
         }
 

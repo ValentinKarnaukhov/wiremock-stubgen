@@ -113,12 +113,6 @@ public final class GetResponseCompositeListStub extends AbstractStub<GetResponse
             return this;
         }
 
-        /** A list of primitives is a leaf: there is nothing inside it to reach for. */
-        public CompositeBodyListBuilder<P> primitiveList(List<String> value) {
-            current().primitiveList(value);
-            return this;
-        }
-
         // A nested object is flattened into the name rather than given a builder:
         // a builder would buy a shorter name at the price of two more exit() calls.
 
@@ -129,6 +123,19 @@ public final class GetResponseCompositeListStub extends AbstractStub<GetResponse
 
         public CompositeBodyListBuilder<P> compositeDeepFieldDeepestField(String value) {
             compositeDeepField().deepestField(value);
+            return this;
+        }
+
+        /**
+         * A list of primitives is a leaf: there is nothing inside it to reach for.
+         *
+         * <p>It sits here, and not next to primitive(), because accessors are emitted
+         * in the order the specification declares the properties they came from. That
+         * order is what the request matcher over this same schema also follows, and
+         * the two reading alike matters more than grouping by shape.
+         */
+        public CompositeBodyListBuilder<P> primitiveList(List<String> value) {
+            current().primitiveList(value);
             return this;
         }
 

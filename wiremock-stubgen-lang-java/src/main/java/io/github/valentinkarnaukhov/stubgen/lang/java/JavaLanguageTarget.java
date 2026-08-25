@@ -11,9 +11,10 @@ import java.util.Objects;
 /**
  * Emits Java WireMock stub builders.
  *
- * <p>At this stage the target exists to pin down the module boundary and prove the
- * ServiceLoader wiring; source emission is added together with the specification reader and the
- * explode resolver.
+ * <p>What is emitted is only the typed surface — a method per parameter, per status code
+ * and per body. Everything those methods do at runtime is inherited from the runtime
+ * library, because anything written into a generated file is a thing a consumer cannot
+ * fix without regenerating.
  */
 public final class JavaLanguageTarget implements LanguageTarget {
 
@@ -33,6 +34,7 @@ public final class JavaLanguageTarget implements LanguageTarget {
     public List<GeneratedFile> generate(StubApi api, TargetOptions options) {
         Objects.requireNonNull(api, "api");
         Objects.requireNonNull(options, "options");
-        return List.of();
+        StubEmitter emitter = new StubEmitter(api, options);
+        return api.operations().stream().map(emitter::emit).toList();
     }
 }

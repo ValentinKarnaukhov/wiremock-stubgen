@@ -22,5 +22,15 @@
             <groupId>io.github.valentinkarnaukhov</groupId>
             <artifactId>wiremock-stubgen-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.samskivert</groupId>
+            <artifactId>jmustache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.valentinkarnaukhov</groupId>
+            <artifactId>wiremock-stubgen-core</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

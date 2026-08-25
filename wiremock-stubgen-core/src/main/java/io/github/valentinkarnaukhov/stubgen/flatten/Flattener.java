@@ -89,7 +89,7 @@ public final class Flattener {
 
         // A request matcher is one class per schema wherever it stands, so the root's
         // list-ness is recorded on the model and never on the scope.
-        boolean rootScopeIsList = rootIsList && side == BodySide.RESPONSE;
+        boolean rootScopeIsList = rootIsList && side.distinguishesPosition();
 
         List<BodyScope> scopes = new ArrayList<>();
         Set<String> visited = new LinkedHashSet<>();
@@ -100,14 +100,15 @@ public final class Flattener {
 
         while (!queue.isEmpty()) {
             PendingScope pending = queue.poll();
-            List<Accessor> accessors = accessorsOf(api.schemas().get(pending.schemaName()));
-            scopes.add(new BodyScope(pending.schemaName(), pending.listPosition(), accessors));
+            Flattened flattened = flattenSchema(api.schemas().get(pending.schemaName()));
+            scopes.add(new BodyScope(
+                    pending.schemaName(), pending.listPosition(), flattened.accessors(), flattened.intermediates()));
 
-            for (Accessor accessor : accessors) {
+            for (Accessor accessor : flattened.accessors()) {
                 if (accessor.kind() != Accessor.Kind.NESTED_LIST) {
                     continue;
                 }
-                PendingScope next = new PendingScope(accessor.targetSchema(), side == BodySide.RESPONSE);
+                PendingScope next = new PendingScope(accessor.targetSchema(), side.distinguishesPosition());
                 if (visited.add(next.id())) {
                     queue.add(next);
                 }
@@ -121,13 +122,15 @@ public final class Flattener {
      * were written to have: the same schema reads the same way whether it is being
      * produced or matched, and only the signatures behind the names differ.
      */
-    private List<Accessor> accessorsOf(ObjectSchema schema) {
+    private Flattened flattenSchema(ObjectSchema schema) {
         Map<String, Accessor> byName = new LinkedHashMap<>();
-        collect(schema, List.of(), byName, schema.name());
-        return List.copyOf(byName.values());
+        List<Intermediate> intermediates = new ArrayList<>();
+        collect(schema, List.of(), byName, intermediates, schema.name());
+        return new Flattened(List.copyOf(byName.values()), List.copyOf(intermediates));
     }
 
-    private void collect(ObjectSchema schema, List<String> prefix, Map<String, Accessor> byName, String scopeName) {
+    private void collect(ObjectSchema schema, List<String> prefix, Map<String, Accessor> byName,
+                         List<Intermediate> intermediates, String scopeName) {
         if (prefix.size() >= options.maxDepth()) {
             return;
         }
@@ -137,7 +140,11 @@ public final class Flattener {
 
             Optional<ObjectSchema> nested = singleValuedObject(type);
             if (nested.isPresent()) {
-                collect(nested.get(), path, byName, scopeName);
+                // Recorded before descending, so the list reads in the order a builder has
+                // to create them: an object always precedes what it contains.
+                intermediates.add(new Intermediate(
+                        Names.escape(Names.join(path), options.reservedNames()), path, nested.get().name()));
+                collect(nested.get(), path, byName, intermediates, scopeName);
                 continue;
             }
 
@@ -200,5 +207,8 @@ public final class Flattener {
         String id() {
             return listPosition ? schemaName + "[]" : schemaName;
         }
+    }
+
+    private record Flattened(List<Accessor> accessors, List<Intermediate> intermediates) {
     }
 }

@@ -1,0 +1,70 @@
+    public final class {{name}}<P> extends {{base}}<P> {
+    {{#list}}
+
+        private final {{listType}} items;
+
+        private {{itemType}} current;
+
+        {{name}}(P parent, {{listType}} items) {
+            super(parent, {{stubClass}}.this);
+            this.items = items;
+        }
+
+        public {{name}}<P> addNew() {
+            current = new {{itemType}}();
+            items.add(current);
+            return this;
+        }
+    {{/list}}
+    {{^list}}
+
+        private final {{itemType}} body;
+
+        {{name}}(P parent, {{itemType}} body) {
+            super(parent, {{stubClass}}.this);
+            this.body = body;
+        }
+    {{/list}}
+    {{#accessors}}
+    {{#nested}}
+
+        public {{targetBuilder}}<{{owner}}<P>> {{name}}() {
+    {{#local}}
+            {{localType}} {{localName}} = {{localInit}};
+    {{/local}}
+            if ({{receiver}}.{{getter}}() == null) {
+                {{receiver}}.{{property}}(new ArrayList<>());
+            }
+            return new {{targetBuilder}}<>(this, {{receiver}}.{{getter}}());
+        }
+    {{/nested}}
+    {{^nested}}
+
+        public {{owner}}<P> {{name}}({{type}} value) {
+            {{receiver}}.{{property}}(value);
+            return this;
+        }
+    {{/nested}}
+    {{/accessors}}
+    {{#hasCurrent}}
+
+        private {{itemType}} current() {
+            if (current == null) {
+                addNew();
+            }
+            return current;
+        }
+    {{/hasCurrent}}
+    {{#holders}}
+
+        private {{holderType}} {{name}}() {
+    {{#local}}
+            {{localType}} {{localName}} = {{localInit}};
+    {{/local}}
+            if ({{receiver}}.{{getter}}() == null) {
+                {{receiver}}.{{property}}(new {{holderType}}());
+            }
+            return {{receiver}}.{{getter}}();
+        }
+    {{/holders}}
+    }

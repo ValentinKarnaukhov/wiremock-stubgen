@@ -1,0 +1,31 @@
+    public final class {{name}}<P> extends {{base}}<P> {
+
+        {{name}}(P parent, String path) {
+            super(parent, {{stubClass}}.this, path,
+                    {{stubClass}}.this::addRequestBodyPattern);
+        }
+    {{#accessors}}
+    {{#nested}}
+
+        public {{targetMatcher}}<{{owner}}<P>> {{name}}() {
+            return new {{targetMatcher}}<>(this, path() + "{{jsonPath}}[*]");
+        }
+    {{/nested}}
+    {{^nested}}
+    {{#valueList}}
+
+        public {{owner}}<P> {{name}}({{type}} value) {
+            match("{{jsonPath}}[?(@ == '" + {{valueExpression}} + "')]");
+            return this;
+        }
+    {{/valueList}}
+    {{^valueList}}
+
+        public {{owner}}<P> {{name}}({{type}} value) {
+            match("{{jsonPath}}", {{equalTo}}({{valueExpression}}));
+            return this;
+        }
+    {{/valueList}}
+    {{/nested}}
+    {{/accessors}}
+    }

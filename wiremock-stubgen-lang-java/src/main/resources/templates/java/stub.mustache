@@ -1,0 +1,86 @@
+package {{packageName}};
+
+{{#imports}}
+{{.}}
+{{/imports}}
+
+public final class {{className}} extends {{abstractStub}}<{{className}}> {
+
+    private static final String {{pathConstant}} = "{{path}}";
+{{#parameterFields}}
+
+{{#names}}
+    private final {{mapType}}<{{keyType}}, {{valueType}}> {{.}} = new {{implType}}<>();
+{{/names}}
+{{/parameterFields}}
+
+    public {{className}}({{stubTarget}} target) {
+        super(target);
+    }
+{{#parameterMethods}}
+
+    public {{className}} {{name}}({{type}} value) {
+        {{field}}.put("{{wireName}}", {{equalTo}}({{valueExpression}}));
+        return self();
+    }
+{{/parameterMethods}}
+{{#requestBody}}
+
+    public {{className}} requestBody({{type}} body) {
+        return matchWholeRequestBody(body);
+    }
+{{/requestBody}}
+{{#requestMatcher}}
+
+    public {{matcherClass}}<{{className}}> requestBody() {
+        return new {{matcherClass}}<>(this, "{{rootPath}}");
+    }
+{{/requestMatcher}}
+{{#responses}}
+
+    public {{className}} {{name}}({{#type}}{{type}} body{{/type}}) {
+        return response({{status}}, {{#type}}body{{/type}}{{^type}}null{{/type}});
+    }
+{{#builder}}
+
+    public {{builderClass}}<{{className}}> {{name}}() {
+        {{declaredType}} body = {{initExpression}};
+        response({{status}}, body);
+        return new {{builderClass}}<>(this, body);
+    }
+{{/builder}}
+{{/responses}}
+{{#request}}
+
+    @Override
+    protected {{mappingBuilder}} toRequest() {
+{{#local}}
+        {{mappingBuilder}} request = {{expression}};
+{{#hasPath}}
+        pathParams.forEach(request::withPathParam);
+{{/hasPath}}
+{{#hasQuery}}
+        request.withQueryParams(queryParams);
+{{/hasQuery}}
+{{#hasHeader}}
+        headerParams.forEach(request::withHeader);
+{{/hasHeader}}
+{{#hasCookie}}
+        cookieParams.forEach(request::withCookie);
+{{/hasCookie}}
+        return request;
+{{/local}}
+{{^local}}
+        return {{expression}}{{#hasQuery}}.withQueryParams(queryParams){{/hasQuery}};
+{{/local}}
+    }
+{{/request}}
+{{#matchers}}
+
+{{>requestMatcher}}
+{{/matchers}}
+{{#builders}}
+
+{{>responseBuilder}}
+{{/builders}}
+}

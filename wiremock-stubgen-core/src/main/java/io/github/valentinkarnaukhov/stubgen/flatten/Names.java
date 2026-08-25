@@ -1,16 +1,16 @@
 package io.github.valentinkarnaukhov.stubgen.flatten;
 
+import io.github.valentinkarnaukhov.stubgen.naming.Identifiers;
+
 import java.util.List;
 import java.util.Set;
 
 /**
  * Turns a route through a schema into an accessor name.
  *
- * <p>This is the one place in {@code spec}-adjacent code that knows anything about
- * identifiers, and it knows the least it can: an accessor name comes out as ASCII
- * letters and digits starting with a lower-case letter, which every target language this
- * generator is likely to grow can accept. A target is free to re-case the result, but it
- * will not have to repair it.
+ * <p>The shaping of wire names into identifiers lives in {@link Identifiers}, shared with
+ * everything else that has to do it. What is left here is the part specific to
+ * flattening: getting out of the way of the methods a generated scope inherits.
  */
 final class Names {
 
@@ -19,31 +19,9 @@ final class Names {
 
     /**
      * Camel-joins wire names into one accessor name.
-     *
-     * <p>Wire names are not identifiers. JSON permits {@code x-dashed}, {@code some.field}
-     * and {@code 3d}, and specifications do use the first two, so the join splits each
-     * segment on anything that is not a letter or a digit and capitalises what follows.
-     * A name that would start with a digit gets an underscore, because that is the only
-     * repair that does not invent a word.
      */
     static String join(List<String> segments) {
-        StringBuilder result = new StringBuilder();
-        for (String segment : segments) {
-            for (String word : segment.split("[^A-Za-z0-9]+")) {
-                if (word.isEmpty()) {
-                    continue;
-                }
-                result.append(Character.toUpperCase(word.charAt(0))).append(word, 1, word.length());
-            }
-        }
-        if (result.isEmpty()) {
-            return "_";
-        }
-        result.setCharAt(0, Character.toLowerCase(result.charAt(0)));
-        if (Character.isDigit(result.charAt(0))) {
-            result.insert(0, '_');
-        }
-        return result.toString();
+        return Identifiers.camelJoin(segments);
     }
 
     /**

@@ -57,6 +57,7 @@
 
         <swagger-parser.version>2.1.31</swagger-parser.version>
         <wiremock.version>3.13.1</wiremock.version>
+        <jmustache.version>1.16</jmustache.version>
         <junit.version>5.11.4</junit.version>
         <assertj.version>3.27.3</assertj.version>
         <maven.api.version>3.9.9</maven.api.version>
@@ -80,6 +81,13 @@
             </dependency>
             <dependency>
                 <groupId>io.github.valentinkarnaukhov</groupId>
+                <artifactId>wiremock-stubgen-core</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.github.valentinkarnaukhov</groupId>
                 <artifactId>wiremock-stubgen-lang-java</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -98,6 +106,12 @@
                 <groupId>org.wiremock</groupId>
                 <artifactId>wiremock</artifactId>
                 <version>${wiremock.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.samskivert</groupId>
+                <artifactId>jmustache</artifactId>
+                <version>${jmustache.version}</version>
             </dependency>
 
             <dependency>

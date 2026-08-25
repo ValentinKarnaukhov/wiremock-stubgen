@@ -20,5 +20,18 @@ package io.github.valentinkarnaukhov.stubgen.flatten;
  */
 public enum BodySide {
     RESPONSE,
-    REQUEST
+    REQUEST;
+
+    /**
+     * Whether a schema needs a separate scope for each position it stands at.
+     *
+     * <p>The single home of the second rule above. It is asked in two places — once when
+     * the flattener decides which scopes to build, once when an emitter looks up the
+     * scope a nested-list accessor hands out — and the two must agree exactly. If they
+     * ever disagree the lookup quietly finds nothing and the emitter loses a nested
+     * builder without a word of complaint.
+     */
+    public boolean distinguishesPosition() {
+        return this == RESPONSE;
+    }
 }
