@@ -419,6 +419,8 @@ class LibraryStubsTest {
                     .publishedOn(LocalDate.of(1999, 10, 20))
                     .ratings(Map.of("clarity", 5))
                     .chapters(List.of(List.of("Preface"), List.of("Tools", "Debugging")))
+                    .coverUrl(URI.create("https://example.com/covers/978-0201616224.png"))
+                    .publisherSite("https://example.com")
                 .mock();
 
         JsonNode book = json(get("/books/978-0201616224"));
@@ -426,6 +428,9 @@ class LibraryStubsTest {
         assertThat(book.at("/publishedOn").asText()).isEqualTo("1999-10-20");
         assertThat(book.at("/ratings/clarity").asInt()).isEqualTo(5);
         assertThat(book.at("/chapters/1/1").asText()).isEqualTo("Debugging");
+        assertThat(book.at("/coverUrl").asText())
+                .isEqualTo("https://example.com/covers/978-0201616224.png");
+        assertThat(book.at("/publisherSite").asText()).isEqualTo("https://example.com");
     }
 
     /**

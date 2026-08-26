@@ -63,6 +63,12 @@ final class JavaTypes {
                 case "date" -> "java.time.LocalDate";
                 case "date-time" -> "java.time.OffsetDateTime";
                 case "uuid" -> "java.util.UUID";
+                case "uri" -> "java.net.URI";
+                case "binary" -> "java.io.File";
+                case "byte" -> "byte[]";
+                // Measured on 7.24.0: url, email, hostname, ipv4 and password all stay
+                // String, as does any format the generator does not know. Only the six
+                // above buy a type of their own.
                 default -> "java.lang.String";
             };
             default -> "java.lang.String";

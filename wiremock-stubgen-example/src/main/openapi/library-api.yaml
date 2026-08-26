@@ -212,6 +212,15 @@ components:
         publishedOn:
           type: string
           format: date
+        # Not a string either, though it looks like one. The awkward part is that
+        # its neighbours below -- url, email -- are formats the generator knows
+        # and still writes as String, so the rule is not "any format is a type".
+        coverUrl:
+          type: string
+          format: uri
+        publisherSite:
+          type: string
+          format: url
         # No properties, only a rule about the ones that turn up. The model
         # generator writes a Map, which has no setters to reach into.
         ratings:
