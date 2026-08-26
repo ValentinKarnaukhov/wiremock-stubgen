@@ -1,5 +1,6 @@
 package io.github.valentinkarnaukhov.stubgen.openapi;
 
+import io.github.valentinkarnaukhov.stubgen.fixtures.Fixtures;
 import io.github.valentinkarnaukhov.stubgen.spec.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -21,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class OpenApiReaderTest {
 
-    private static final Path SPEC = Path.of("src/test/resources/specs/sample-api.yaml");
+    private static final Path SPEC = Fixtures.sampleApi();
 
     private static StubApi api;
     private static List<String> warnings;

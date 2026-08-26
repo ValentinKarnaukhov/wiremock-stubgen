@@ -1,5 +1,6 @@
 package io.github.valentinkarnaukhov.stubgen.flatten;
 
+import io.github.valentinkarnaukhov.stubgen.fixtures.Fixtures;
 import io.github.valentinkarnaukhov.stubgen.openapi.OpenApiReader;
 import io.github.valentinkarnaukhov.stubgen.spec.ObjectSchema;
 import io.github.valentinkarnaukhov.stubgen.spec.Property;
@@ -29,7 +30,7 @@ import static org.assertj.core.api.Assertions.tuple;
  */
 class FlattenerTest {
 
-    private static final Path SPEC = Path.of("src/test/resources/specs/sample-api.yaml");
+    private static final Path SPEC = Fixtures.sampleApi();
 
     private static StubApi api;
 

@@ -40,6 +40,7 @@ specification reader, the explode resolver and the emitter are being built.
 | `wiremock-stubgen-codegen-java` | Java target: type mapping and source emission. Runs at generate time only |
 | `wiremock-stubgen-runtime-java` | Hand-written runtime the generated Java code builds on. Ships to the consumer |
 | `wiremock-stubgen-maven-plugin` | Maven delivery |
+| `wiremock-stubgen-fixtures` | The specification every layer is tested against |
 | `wiremock-stubgen-it` | Integration tests: generate, compile, run against WireMock |
 
 The two `-java` modules share nothing but the word. `codegen-java` reads specifications

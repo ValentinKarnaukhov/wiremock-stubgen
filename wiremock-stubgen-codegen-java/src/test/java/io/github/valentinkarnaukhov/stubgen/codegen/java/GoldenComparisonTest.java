@@ -1,5 +1,6 @@
 package io.github.valentinkarnaukhov.stubgen.codegen.java;
 
+import io.github.valentinkarnaukhov.stubgen.fixtures.Fixtures;
 import io.github.valentinkarnaukhov.stubgen.openapi.OpenApiReader;
 import io.github.valentinkarnaukhov.stubgen.spec.StubApi;
 import io.github.valentinkarnaukhov.stubgen.target.GeneratedFile;
@@ -9,7 +10,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -36,9 +36,8 @@ class GoldenComparisonTest {
 
     @BeforeAll
     static void readFixture() {
-        Path spec = copyFixture();
         api = new OpenApiReader(warning -> {
-        }).read(spec);
+        }).read(Fixtures.sampleApi());
     }
 
     @Test
@@ -144,24 +143,6 @@ class GoldenComparisonTest {
                 .orElseThrow(() -> new AssertionError("no generated file at " + relativePath
                         + ", generated: " + files.stream().map(GeneratedFile::relativePath).toList()))
                 .content();
-    }
-
-    /**
-     * The fixture travels in the core module's test jar, so it arrives as a classpath
-     * resource rather than a file. swagger-parser wants a path, hence the copy.
-     */
-    private static Path copyFixture() {
-        try (InputStream in = GoldenComparisonTest.class.getResourceAsStream("/specs/sample-api.yaml")) {
-            if (in == null) {
-                throw new AssertionError("the core test jar is not on the test classpath");
-            }
-            Path target = Files.createTempFile("sample-api", ".yaml");
-            target.toFile().deleteOnExit();
-            Files.write(target, in.readAllBytes());
-            return target;
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
     }
 
     private static String read(Path path) {

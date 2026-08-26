@@ -32,8 +32,7 @@
         </dependency>
         <dependency>
             <groupId>io.github.valentinkarnaukhov</groupId>
-            <artifactId>wiremock-stubgen-core</artifactId>
-            <type>test-jar</type>
+            <artifactId>wiremock-stubgen-fixtures</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

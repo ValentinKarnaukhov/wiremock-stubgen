@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.valentinkarnaukhov</groupId>
+        <artifactId>wiremock-stubgen-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wiremock-stubgen-fixtures</artifactId>
+    <name>wiremock-stubgen-fixtures</name>
+    <description>
+        The specification the project is designed against, and the code that hands it to a
+        test as a file.
+
+        It lived in the core module's test resources and reached the Java target through a
+        test jar, which read as "the core's fixture, borrowed". It is not: it is the one
+        specification every layer is measured against, and each layer has an equal claim on
+        it. A module of its own says that, and removes the test-jar dependency that only
+        existed to carry a single file.
+
+        A test aid, not a product artifact: built and installed so the reactor can use it,
+        never deployed.
+    </description>
+
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+</project>

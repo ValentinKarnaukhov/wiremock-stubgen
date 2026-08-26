@@ -43,6 +43,7 @@
     </issueManagement>
 
     <modules>
+        <module>wiremock-stubgen-fixtures</module>
         <module>wiremock-stubgen-core</module>
         <module>wiremock-stubgen-codegen-java</module>
         <module>wiremock-stubgen-runtime-java</module>
@@ -81,9 +82,8 @@
             </dependency>
             <dependency>
                 <groupId>io.github.valentinkarnaukhov</groupId>
-                <artifactId>wiremock-stubgen-core</artifactId>
+                <artifactId>wiremock-stubgen-fixtures</artifactId>
                 <version>${project.version}</version>
-                <type>test-jar</type>
                 <scope>test</scope>
             </dependency>
             <dependency>
