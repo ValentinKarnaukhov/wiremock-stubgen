@@ -5,18 +5,15 @@ import java.util.List;
 /**
  * Everything one stub template needs, and nothing it has to work out for itself.
  *
- * <p>Type names arrive here already shortened and already imported. A template cannot ask
- * for an import halfway through rendering — it produces the file in one pass, header
- * first — so every name a template prints is resolved while this view is built. The price
- * is that a consumer who overrides a template and reaches for a type the default template
- * never mentions has to import it themselves; openapi-generator asks the same of its
- * users.
+ * <p>Type names arrive already shortened and already imported: a template produces the
+ * file in one pass, header first, so it cannot ask for an import halfway through. The
+ * price is that a consumer overriding a template and reaching for a type the default
+ * template never mentions must import it themselves.
  *
- * <p>The body classes come in two shapes that deliberately do not share a record. A
- * builder constructs an object and has to create the objects on the way to it; a matcher
- * appends a JSONPath expression and creates nothing. The names they declare are identical
- * — that symmetry is the point — but nothing underneath is, and a common record would
- * have to carry both halves and leave half of them null.
+ * <p>The body classes come in two shapes that deliberately do not share a record: a
+ * builder constructs an object and creates the objects on the way to it, a matcher appends
+ * a JSONPath expression and creates nothing. A common record would leave half its fields
+ * null either way.
  */
 record StubView(
         String packageName,
@@ -35,10 +32,7 @@ record StubView(
         List<MatcherClass> matchers,
         List<BuilderClass> builders) {
 
-    /**
-     * The parameter maps a stub collects matchers in. All four share one set of types, so
-     * they are named once here rather than repeated on every field.
-     */
+    /** The parameter maps a stub collects matchers in. All four share one set of types. */
     record ParameterFields(
             String mapType,
             String keyType,
@@ -76,9 +70,8 @@ record StubView(
     }
 
     /**
-     * Query parameters go in one call and can stay on the chain; the others are applied one
-     * at a time and need a variable to apply them to. {@code local} says which shape the
-     * method takes.
+     * Query parameters go in one call and can stay on the chain; the others are applied
+     * one at a time and need a variable. {@code local} says which shape the method takes.
      */
     record Request(
             String mappingBuilder,

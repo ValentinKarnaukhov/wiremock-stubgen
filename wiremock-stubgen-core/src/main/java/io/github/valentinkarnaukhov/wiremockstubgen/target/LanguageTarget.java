@@ -13,15 +13,10 @@ import java.util.List;
  */
 public interface LanguageTarget {
 
-    /**
-     * Stable identifier used to select this target from build configuration,
-     * for example {@code java} or {@code kotlin}.
-     */
+    /** Stable identifier used to select this target from build configuration. */
     String id();
 
-    /**
-     * Human-readable name for logs and error messages.
-     */
+    /** Human-readable name for logs and error messages. */
     default String displayName() {
         return id();
     }

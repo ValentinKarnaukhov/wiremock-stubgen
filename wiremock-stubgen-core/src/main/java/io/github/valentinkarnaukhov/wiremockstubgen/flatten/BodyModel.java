@@ -8,8 +8,8 @@ import java.util.Optional;
  * Everything an emitter needs to write out one body of one operation.
  *
  * <p>A model exists only when the body is, or is a list of, an object schema the
- * specification describes. A bare string body or an empty response produces none: there
- * is nothing to flatten, and the emitter should fall back to the typed whole-body form.
+ * specification describes. A bare string body or an empty response produces none, and the
+ * emitter should fall back to the typed whole-body form.
  *
  * @param side       which end of the operation this body belongs to
  * @param rootSchema the schema at the root of the body

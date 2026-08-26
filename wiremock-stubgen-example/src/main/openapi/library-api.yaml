@@ -1,20 +1,15 @@
 openapi: 3.0.3
 
-# The specification the example is built from.
+# The specification the example is built from. Small and plausible, unlike the
+# fixture in the fixtures module, yet between its four operations it reaches
+# every shape a generated stub can take -- a path parameter, query parameters, a
+# response body deep enough to need a builder, a list of objects inside that
+# body, an error code with a schema of its own, and a request body to match on.
 #
-# Deliberately unlike the fixture in src/main/resources/specs of the fixtures
-# module: that one is a pile of awkward cases and reads like a test. This one is
-# meant to be read. It is small, it is plausible, and between its four
-# operations it reaches every shape a generated stub can take -- a path
-# parameter, query parameters, a response body deep enough to need a builder, a
-# list of objects inside that body, an error code with a schema of its own, and
-# a request body to match on.
-#
-# It is also written the way large specifications are written, because those are
-# the shapes that broke first: a shared error response referred to from several
-# operations, a resource composed with allOf, a status enum written inside the
-# schema that uses it, a property only the server ever sends, and a body written
-# out in place instead of being declared.
+# It is also written the way large specifications are: a shared error response
+# referred to from several operations, a resource composed with allOf, a status
+# enum written inside the schema that uses it, a property only the server ever
+# sends, and a body written out in place instead of being declared.
 
 info:
   title: Library API
@@ -44,8 +39,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Book'
         # Written once under components and pointed at from every operation that
-        # can fail this way, which is how a specification of any size avoids
-        # repeating its error bodies.
+        # can fail this way.
         404:
           $ref: '#/components/responses/NotFound'
 
@@ -242,9 +236,9 @@ components:
         href:
           type: string
 
-    # A oneOf with a discriminator. Nothing here has "no single shape": the model
-    # generator writes an ordinary class holding the member's properties, so the stub
-    # offers accessors into it exactly as it would for an allOf.
+    # A oneOf with a discriminator. The model generator writes an ordinary class
+    # holding the member's properties, so the stub offers accessors into it
+    # exactly as it would for an allOf.
     LoanEvent:
       oneOf:
         - $ref: '#/components/schemas/LoanReturnedEvent'

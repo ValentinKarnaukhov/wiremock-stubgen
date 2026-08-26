@@ -22,11 +22,10 @@ import static org.assertj.core.api.Assertions.tuple;
 /**
  * Checks the flattener against the rules the golden stubs were written to.
  *
- * <p>The everyday rules are checked against the fixture, so that a change to the reader
- * or to the specification shows up here rather than in generated output. The three
- * hostile cases — a name collision, a schema wide enough to need a low depth limit, a
- * body that is not an object — are built by hand: a fixture that contained a collision
- * could not be flattened at all, and every other test would fail with it.
+ * <p>The everyday rules are checked against the fixture. The three hostile cases — a name
+ * collision, a schema wide enough to need a low depth limit, a body that is not an object
+ * — are built by hand, because a fixture containing a collision could not be flattened at
+ * all and every other test would fail with it.
  */
 class FlattenerTest {
 

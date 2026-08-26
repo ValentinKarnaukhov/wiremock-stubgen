@@ -5,15 +5,10 @@ import java.util.List;
 /**
  * Turns names out of a specification into names a programming language will accept.
  *
- * <p>Wire names are not identifiers. JSON permits {@code x-dashed}, {@code some.field}
- * and {@code 3d}, and real specifications use the first two freely. Repairing that once,
- * here, is deliberate: leaving it to each language target would be the same work done
- * repeatedly with different bugs, and the result would differ between targets for no
- * reason a user could name.
- *
- * <p>What comes out is ASCII letters and digits only, which every language this generator
- * is likely to grow can accept. A target may re-case the result; it will not have to
- * repair it.
+ * <p>Wire names are not identifiers: JSON permits {@code x-dashed}, {@code some.field}
+ * and {@code 3d}. Repairing that once, here, keeps the result the same across language
+ * targets. What comes out is ASCII letters and digits only; a target may re-case it but
+ * will not have to repair it.
  */
 public final class Identifiers {
 

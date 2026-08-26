@@ -32,13 +32,9 @@ import java.util.function.Consumer;
 /**
  * Reads an OpenAPI document into the language-neutral description under {@code spec}.
  *
- * <p>This is the only place that knows about swagger-parser. Everything downstream sees
- * records with no third-party types in them, which is what makes a second reader — for a
- * different description format — a matter of adding a class rather than of unpicking the
- * generator.
- *
- * <p>Reading is deliberately lossy. A specification says far more than a stub builder can
- * express, and carrying the rest along would only invite the emitter to depend on it.
+ * <p>The only place that knows about swagger-parser: everything downstream sees records
+ * with no third-party types in them. Reading is deliberately lossy — a specification says
+ * far more than a stub builder can express.
  */
 public final class OpenApiReader {
 
@@ -49,10 +45,8 @@ public final class OpenApiReader {
     private final Composition composition;
 
     /**
-     * @param warnings where to report everything the reader had to decide for itself —
-     *                 a missing operationId, a missing tag, a media type it ignored.
-     *                 Silence would make those decisions invisible, and they are
-     *                 exactly the ones a user needs to see to fix their specification.
+     * @param warnings where to report everything the reader had to decide for itself — a
+     *                 missing operationId, a missing tag, a media type it ignored
      */
     public OpenApiReader(Consumer<String> warnings) {
         this(warnings, Composition.MERGE);
@@ -150,8 +144,8 @@ public final class OpenApiReader {
      * The specification's operationId when it has one.
      *
      * <p>The fallback is a name, not an identity: two operations differing only in a
-     * parameter would collide. openapi-generator has the same problem and resolves it the
-     * same way, which at least means a user meeting the collision meets it once.
+     * parameter would collide. openapi-generator resolves it the same way, so a user
+     * meeting the collision meets it once.
      */
     private String operationId(io.swagger.v3.oas.models.Operation operation,
                                HttpMethod method, String path) {
@@ -166,10 +160,9 @@ public final class OpenApiReader {
     /**
      * The first declared tag.
      *
-     * <p>openapi-generator emits an operation into every tag it declares. For a stub
-     * builder that would mean the same class twice under two names, so the first tag wins
-     * and the rest are reported. Without any tag the first path segment stands in — a
-     * grouping the user can see in the URL, unlike a package called "default".
+     * <p>openapi-generator emits an operation into every tag it declares; for a stub
+     * builder that would mean the same class twice, so the first tag wins and the rest are
+     * reported. Without any tag the first path segment stands in.
      */
     private String tag(io.swagger.v3.oas.models.Operation operation, String path) {
         List<String> tags = operation.getTags();
@@ -185,10 +178,9 @@ public final class OpenApiReader {
     }
 
     /**
-     * Parameters declared on the operation, plus those declared once on the path item and
-     * shared by every operation under it. An operation may restate a shared parameter,
-     * and then its own declaration wins — the specification says so, and a reader that
-     * simply concatenated the two lists would emit the parameter twice.
+     * Parameters declared on the operation, plus those declared once on the path item.
+     * An operation may restate a shared parameter, and then its own declaration wins:
+     * concatenating the two lists would emit the parameter twice.
      */
     private List<Parameter> parameters(io.swagger.v3.oas.models.Operation operation,
                                        PathItem pathItem, Components components, Schemas schemas) {
@@ -274,15 +266,10 @@ public final class OpenApiReader {
     /**
      * Follows a {@code $ref} that points at a component other than a schema.
      *
-     * <p>swagger-parser leaves these alone. With {@code setResolve(true)} a response
-     * written as {@code $ref: '#/components/responses/BadRequest'} still arrives with its
-     * {@code $ref} set and its content null — verified against the parser, not assumed —
-     * so following it is ours to do, exactly as it is for a schema reference.
-     *
-     * <p>It matters more than it looks. Shared error responses are how large
-     * specifications avoid repeating themselves: in one real specification of 23
-     * operations, 121 of its 154 responses were written this way, and every one of them
-     * was silently losing its body.
+     * <p>swagger-parser leaves these alone even under {@code setResolve(true)}: a response
+     * written as {@code $ref: '#/components/responses/BadRequest'} arrives with its
+     * {@code $ref} still set and its content null. Shared error responses are common, so
+     * not following it silently loses their bodies.
      */
     private <T> T dereference(T reference, Map<String, T> components, String prefix,
                               java.util.function.Function<T, String> refOf) {
@@ -322,9 +309,9 @@ public final class OpenApiReader {
     /**
      * Picks the JSON media type, or the only one present.
      *
-     * <p>Everything downstream assumes JSON — the response is serialised with a JSON
-     * mapper and the request is matched with JSONPath — so a specification declaring XML
-     * as well would otherwise produce a stub that quietly speaks the wrong dialect.
+     * <p>Everything downstream assumes JSON — responses are serialised with a JSON mapper
+     * and requests matched with JSONPath — so a document declaring XML as well would
+     * otherwise produce a stub that quietly speaks the wrong dialect.
      */
     private MediaType jsonMediaType(Map<String, MediaType> content, String what) {
         if (content.isEmpty()) {

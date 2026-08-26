@@ -23,9 +23,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Generates WireMock stub builders from an OpenAPI specification.
- */
+/** Generates WireMock stub builders from an OpenAPI specification. */
 @Mojo(name = "generate", defaultPhase = LifecyclePhase.GENERATE_TEST_SOURCES, threadSafe = true)
 public class GenerateMojo extends AbstractMojo {
 
@@ -64,8 +62,7 @@ public class GenerateMojo extends AbstractMojo {
 
     /**
      * How many property hops a body scope flattens through. Ignored unless
-     * {@code explode} is set. Measured over 142 real specifications, the accessor count
-     * stops changing at five.
+     * {@code explode} is set.
      */
     @Parameter(property = "wiremock-stubgen.maxDepth", defaultValue = "5")
     private int maxDepth;

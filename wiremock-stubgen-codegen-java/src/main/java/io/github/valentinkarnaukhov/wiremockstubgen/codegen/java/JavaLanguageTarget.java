@@ -11,10 +11,10 @@ import java.util.Objects;
 /**
  * Emits Java WireMock stub builders.
  *
- * <p>What is emitted is only the typed surface — a method per parameter, per status code
- * and per body. Everything those methods do at runtime is inherited from the runtime
- * library, because anything written into a generated file is a thing a consumer cannot
- * fix without regenerating.
+ * <p>Only the typed surface is emitted — a method per parameter, per status code and per
+ * body. Everything those methods do at runtime is inherited from the runtime library,
+ * because anything written into a generated file is a thing a consumer cannot fix without
+ * regenerating.
  */
 public final class JavaLanguageTarget implements LanguageTarget {
 

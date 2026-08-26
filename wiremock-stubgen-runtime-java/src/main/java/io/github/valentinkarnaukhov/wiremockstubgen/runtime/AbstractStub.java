@@ -18,12 +18,9 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
  * Base class for generated stub builders.
  *
  * <p>Carries everything that does not depend on the operation: where to register, how the
- * response is assembled, and an escape hatch onto the raw WireMock API. A generated
- * subclass is therefore left with the one thing that is genuinely per-operation — the
- * request matcher — plus a typed one-liner per declared status code.
- *
- * <p>Keeping this hand-written means fixing a bug here is a runtime version bump, not a
- * regeneration of every stub in every consuming project.
+ * response is assembled, and an escape hatch onto the raw WireMock API. Keeping this
+ * hand-written means fixing a bug here is a runtime version bump, not a regeneration of
+ * every stub in every consuming project.
  *
  * @param <S> the concrete builder type, so fluent methods keep the caller's type
  */
@@ -64,29 +61,16 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
     }
 
     /**
-     * Backs the generated per-code methods.
-     *
-     * <p>A generated subclass exposes one typed method per declared status code, each of
-     * which is a single delegation:
-     *
-     * <pre>{@code
-     * public GetResponseErrorsStub code404(ErrorBody body) {
-     *     return response(404, body);
-     * }
-     * }</pre>
+     * Backs the generated per-code methods, each of which is a single typed delegation.
      *
      * <p>The body is Object here because the declared schemas of one operation share no
-     * supertype. The erasure never reaches the caller: it is reintroduced by the typed
-     * method above.
-     *
-     * <p>The no-argument form of the same method installs an empty instance of the
-     * declared schema and hands it to a body builder, so the caller can describe the
-     * body field by field instead of constructing it. Both forms end here: the builder
+     * supertype; the typed generated method reintroduces the type. The no-argument form of
+     * that method installs an empty instance and hands it to a body builder, which then
      * writes into the very object this method stored.
      *
      * <p>A stub is one mapping and therefore one response, so a second call replaces the
-     * first rather than adding to it. Sequences of responses are WireMock scenarios,
-     * reachable through {@link #customize(Consumer)}.
+     * first. Sequences of responses are WireMock scenarios, reachable through
+     * {@link #customize(Consumer)}.
      */
     protected final S response(int status, Object body) {
         this.status = status;
@@ -100,16 +84,13 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
      * Requires the request body to equal the given object as JSON. Backs the generated
      * {@code requestBody(Schema)} method.
      *
-     * <p>Not called {@code requestBody}, which would read better, because the generated
-     * method is named that: {@code requestBody(Schema)} would be a legal overload of
-     * {@code requestBody(Object)}, and the {@code return requestBody(body)} inside it
-     * would then resolve to itself. That is a StackOverflowError at runtime rather than
-     * an error at compile time, so the name is kept apart on purpose.
+     * <p>Not named {@code requestBody}: that would be a legal overload of the generated
+     * {@code requestBody(Schema)}, whose {@code return requestBody(body)} would then
+     * resolve to itself — a StackOverflowError at runtime rather than a compile error.
      *
-     * <p>Replaces rather than accumulates: two whole-document matchers describing
-     * different bodies could never both hold, so a second call can only be a
-     * correction of the first. The field matchers below are the opposite — each is a
-     * separate condition, so they add up.
+     * <p>Replaces rather than accumulates, since two whole-document matchers describing
+     * different bodies could never both hold. Field matchers are separate conditions and
+     * do add up.
      */
     protected final S matchWholeRequestBody(Object body) {
         this.wholeBodyPattern = equalToJson(serialize(body));
@@ -118,12 +99,9 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
 
     /**
      * Adds one condition on the request body. Generated matcher builders reach this
-     * through a method reference the generated stub hands them, which is why it can
-     * stay protected: the raw WireMock surface does not have to be reopened to make
-     * the matchers work.
-     *
-     * <p>Verified against WireMock: repeated withRequestBody calls accumulate into a
-     * bodyPatterns array which all have to hold.
+     * through a method reference the generated stub hands them, which is why it can stay
+     * protected. Repeated WireMock {@code withRequestBody} calls accumulate into a
+     * bodyPatterns array, all of which must hold.
      */
     protected final void addRequestBodyPattern(StringValuePattern pattern) {
         fieldPatterns.add(Objects.requireNonNull(pattern, "pattern"));
@@ -146,13 +124,9 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
     }
 
     /**
-     * Applies arbitrary WireMock configuration that the generated API does not model —
-     * delays, priorities, scenarios, fault injection and so on.
-     *
-     * <p>Deliberate escape hatch: the generated surface covers the common cases, and
-     * anything beyond them stays reachable without abandoning the generated builder.
-     * Customisers accumulate in registration order and see the finished mapping builder,
-     * so they can override anything decided here.
+     * Applies arbitrary WireMock configuration the generated API does not model — delays,
+     * priorities, scenarios, fault injection. Customisers accumulate in registration order
+     * and see the finished mapping builder, so they can override anything decided here.
      */
     public final S customize(Consumer<MappingBuilder> customizer) {
         Objects.requireNonNull(customizer, "customizer");
@@ -160,9 +134,7 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
         return self();
     }
 
-    /**
-     * Builds the mapping described by this builder, without registering it.
-     */
+    /** Builds the mapping described by this builder, without registering it. */
     public final StubMapping buildStub() {
         MappingBuilder mappingBuilder = toRequest();
         applyRequestBody(mappingBuilder);
@@ -171,9 +143,7 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
         return mappingBuilder.build();
     }
 
-    /**
-     * Builds and registers the mapping.
-     */
+    /** Builds and registers the mapping. */
     public final StubMapping mock() {
         StubMapping mapping = buildStub();
         target.register(mapping);
@@ -187,9 +157,7 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
      */
     protected abstract MappingBuilder toRequest();
 
-    /**
-     * Assembles the response from the accumulated status, body and media type.
-     */
+    /** Assembles the response from the accumulated status, body and media type. */
     protected ResponseDefinitionBuilder toResponse() {
         ResponseDefinitionBuilder response = aResponse().withStatus(status);
         if (body != null) {
@@ -201,19 +169,15 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
     /**
      * Turns a response body into the bytes WireMock will send.
      *
-     * <p>UNRESOLVED, and centralised here precisely because it is: the mapper used must
-     * agree with the one the consumer's HTTP client uses to deserialise, or the test
-     * fails on a difference the stub introduced. Consumer models are generated by
-     * openapi-generator and carry Jackson annotations — date formats, {@code @JsonInclude},
-     * naming strategies — that a foreign mapper will not honour.
+     * <p>UNRESOLVED, and centralised here because of it: the mapper must agree with the
+     * one the consumer's HTTP client deserialises with, or the test fails on a difference
+     * the stub introduced. Consumer models carry Jackson annotations a foreign mapper will
+     * not honour. Note also that {@code org.wiremock:wiremock} bundles Jackson unshaded
+     * whereas {@code wiremock-standalone} relocates it, so under the standalone artifact
+     * this mapper cannot see the consumer's annotations at all.
      *
-     * <p>Note also that {@code org.wiremock:wiremock} bundles Jackson unshaded, whereas
-     * {@code wiremock-standalone} relocates it to {@code wiremock.com.fasterxml.jackson}.
-     * Under the standalone artifact the mapper below cannot see the consumer's
-     * annotations at all, since those are in the unrelocated package.
-     *
-     * <p>Overridable so a consumer can supply their own mapper today; a first-class hook
-     * is still owed.
+     * <p>Overridable so a consumer can supply their own mapper; a first-class hook is
+     * still owed.
      */
     protected String serialize(Object body) {
         return Json.write(body);

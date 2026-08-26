@@ -9,17 +9,14 @@ import java.util.Optional;
  * every accessor it declares.
  *
  * <p>Identity is the pair (schema, position), not the schema alone, and the position only
- * ever matters on a response. A response list scope holds the list and appends to it,
- * which a single scope has no use for; a request scope is the same class either way,
- * because the position lives in the JSONPath it carries. So one schema can yield two
- * response scopes and never two request ones.
+ * ever matters on a response: a response list scope holds the list and appends to it,
+ * while a request scope is the same class either way because the position lives in the
+ * JSONPath it carries.
  *
  * <p>The accessor set does <em>not</em> depend on where the scope was reached from. Depth
  * is counted inside a scope and restarts at every nested list, which is what makes one
  * class per schema well defined: a schema met at two different nesting depths still
- * flattens identically. Counting depth from the body root instead would make a class's
- * contents depend on its neighbours in the graph, which is the trade this generator has
- * already refused once.
+ * flattens identically.
  *
  * @param schemaName    the component schema this scope describes
  * @param listPosition  whether the scope stands at a list position
@@ -39,12 +36,10 @@ public record BodyScope(
     }
 
     /**
-     * The object an accessor's path passes through just before its last step, if it passes
-     * through one at all.
+     * The object an accessor's path passes through just before its last step, if any.
      *
-     * <p>Looked up by path rather than by name on purpose: a name may have been escaped
-     * away from a reserved word, and matching on the escaped form would silently find
-     * nothing.
+     * <p>Looked up by path rather than by name: a name may have been escaped away from a
+     * reserved word, and matching the escaped form would silently find nothing.
      */
     public Optional<Intermediate> parentOf(Accessor accessor) {
         if (accessor.path().size() < 2) {

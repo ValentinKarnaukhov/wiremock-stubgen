@@ -10,23 +10,16 @@ import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 /**
  * Base class for the generated builders that constrain a request body.
  *
- * <p>The mirror image of {@link AbstractResponseBodyBuilder}, and deliberately shaped the
- * same way so that the same schema reads the same on both sides of a stub. The machinery
- * underneath is not the same at all: a response builder writes into a model instance,
- * whereas a matcher only ever adds a JSONPath expression. Nothing is constructed, so there
- * is no lazy parent creation here — a matcher for a field five levels down is just a
- * longer path.
+ * <p>Shaped like {@link AbstractResponseBodyBuilder} so that the same schema reads the
+ * same on both sides of a stub, but nothing is constructed here: a matcher only adds a
+ * JSONPath expression, so a field five levels down is just a longer path. Each instance
+ * carries the path it is rooted at, which lets one class per schema serve every position
+ * that schema occupies. Matchers accumulate: WireMock ANDs repeated request-body patterns.
  *
- * <p>Each instance carries the path it is rooted at, which is what lets one class per
- * schema serve every position that schema occupies. Matchers accumulate: WireMock ANDs
- * repeated request-body patterns together.
- *
- * <p>There is deliberately no "this whole node equals" method here. Verified against
- * WireMock: a value pattern on a path ending in {@code [*]} is applied to the entire
- * selection rendered as an array, not to each element, so such a method would read as
- * "some element equals this" and mean "the whole list equals this". Matching a body as a
- * whole therefore stays on the stub, which is the only object that unambiguously denotes
- * the whole document.
+ * <p>There is deliberately no "this whole node equals" method. In WireMock a value pattern
+ * on a path ending in {@code [*]} is applied to the entire selection rendered as an array,
+ * not to each element, so such a method would read as "some element equals this" and mean
+ * "the whole list equals this". Matching a body as a whole stays on the stub.
  *
  * @param <P> the level or stub exit() returns to
  */
@@ -50,9 +43,7 @@ public abstract class AbstractRequestBodyMatcher<P> extends AbstractBodyScope<P>
         return path;
     }
 
-    /**
-     * Requires the value at a path below this one to satisfy a pattern.
-     */
+    /** Requires the value at a path below this one to satisfy a pattern. */
     protected final void match(String relativePath, StringValuePattern pattern) {
         sink.accept(matchingJsonPath(path + relativePath, pattern));
     }

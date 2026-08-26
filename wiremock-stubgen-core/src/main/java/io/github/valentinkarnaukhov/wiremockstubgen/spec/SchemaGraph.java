@@ -11,21 +11,14 @@ import java.util.Set;
 /**
  * Which schema refers to which, derived from a catalogue of {@link ObjectSchema}.
  *
- * <p>Exists because swagger-parser does not inline {@code $ref}, not even with
- * {@code setResolve(true)} — verified against the parser rather than assumed. A property
- * that refers to another schema arrives as a bare reference, so walking from a schema to
- * the ones it uses is ours to do.
+ * <p>Needed because swagger-parser does not inline {@code $ref}, not even with
+ * {@code setResolve(true)}: a property referring to another schema arrives as a bare
+ * reference. It answers one question — given a body schema, which schemas does emitting
+ * it drag in — so that schemas nothing responds with are not emitted as noise.
  *
- * <p>It answers one question: given a body schema, which schemas does emitting it drag
- * in. A specification routinely declares schemas nothing responds with, and generating
- * builders for those would be noise.
- *
- * <p>There is deliberately no cycle detection here. An earlier version had it, on the
- * argument that a depth cap is a guess rather than a termination condition. That argument
- * did not survive measurement: the cap terminates a cycle and a merely deep schema by the
- * same mechanism, so a cycle needs no separate one. What the traversal below does need is
- * the visited set — not to handle recursion, but because without it a diamond in the
- * graph is walked twice and a cycle not at all.
+ * <p>There is no cycle detection; the flattener's depth cap terminates a cycle and a
+ * merely deep schema by the same mechanism. The visited set below is not for recursion:
+ * without it a diamond in the graph is walked twice and a cycle not at all.
  */
 public final class SchemaGraph {
 
@@ -46,9 +39,7 @@ public final class SchemaGraph {
         return new SchemaGraph(edges);
     }
 
-    /**
-     * The schemas reachable from this one, including itself. Terminates on a cycle.
-     */
+    /** The schemas reachable from this one, including itself. Terminates on a cycle. */
     public Set<String> reachableFrom(String schemaName) {
         Set<String> seen = new LinkedHashSet<>();
         Deque<String> pending = new ArrayDeque<>();
@@ -63,9 +54,7 @@ public final class SchemaGraph {
         return seen;
     }
 
-    /**
-     * The schemas this one refers to directly, reaching through arrays and maps.
-     */
+    /** The schemas this one refers to directly, reaching through arrays and maps. */
     private Set<String> references(String schemaName) {
         return edges.getOrDefault(schemaName, Set.of());
     }

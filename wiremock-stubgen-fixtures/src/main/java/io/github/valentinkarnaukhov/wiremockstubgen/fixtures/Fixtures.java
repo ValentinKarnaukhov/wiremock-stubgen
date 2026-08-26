@@ -10,23 +10,17 @@ import java.nio.file.Path;
  * Hands the sample specification to a test as a file on disk.
  *
  * <p>The specification is a classpath resource, because that is the only way it can travel
- * to another module. swagger-parser resolves {@code $ref} against a base location and so
- * wants a path, not a stream. Somebody therefore has to write the resource out, and before
- * this module existed every consumer did it for itself. Doing it here means one copy of
- * that code and one temporary file per JVM instead of one per test class.
- *
- * <p>Anything a test may write to would have to be copied per call. Nothing here is
- * writable: the file is the fixture, read-only by convention, and callers share it.
+ * to another module, but swagger-parser resolves {@code $ref} against a base location and
+ * so wants a path. Doing the write-out here means one temporary file per JVM rather than
+ * one per test class. Nothing here is writable: callers share the file.
  */
 public final class Fixtures {
 
     /**
-     * The specification every layer of the project is measured against: seventeen
-     * operations chosen to be awkward rather than realistic. Reserved words as parameter
-     * and property names, a dashed property, an operation answering with several error
-     * codes, three shapes of recursion and a chain deep enough to run past the depth
-     * limit. It is a test fixture and reads like one — the example module has a
-     * specification meant for humans.
+     * The specification every layer of the project is measured against, chosen to be
+     * awkward rather than realistic: reserved words as parameter and property names, a
+     * dashed property, an operation answering with several error codes, three shapes of
+     * recursion and a chain deep enough to run past the depth limit.
      */
     public static Path sampleApi() {
         return SampleApi.PATH;
@@ -38,8 +32,7 @@ public final class Fixtures {
      * written out in place, names given to things that are not classes.
      *
      * <p>Separate from {@link #sampleApi()} because that one is the source of the golden
-     * stubs, and a fixture the goldens are pinned to should not grow every time a new rule
-     * needs covering.
+     * stubs and should not change every time a new rule needs covering.
      */
     public static Path compositionApi() {
         return CompositionApi.PATH;

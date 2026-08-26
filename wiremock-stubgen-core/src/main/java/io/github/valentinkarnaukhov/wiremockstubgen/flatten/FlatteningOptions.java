@@ -12,15 +12,9 @@ import java.util.Set;
 public record FlatteningOptions(int maxDepth, Set<String> reservedNames) {
 
     /**
-     * Deep enough that no real specification was seen to reach it, shallow enough to stop
-     * a cycle.
-     *
-     * <p>Measured over 44 specifications and 673 schemas, the number of accessors a
-     * builder gets stops changing at depth 3: the totals run 1036, 1856, 1973, 2005 and
-     * then stay at 2005 through depths 8 and 10, with the largest single builder at 141
-     * methods. The combinatorial explosion an earlier draft of the plan feared does not
-     * happen, because real schemas are wide and shallow rather than deep. Five leaves
-     * headroom over the observed ceiling without inviting one.
+     * Deep enough that real specifications do not reach it, shallow enough to stop a
+     * cycle. Real schemas are wide and shallow, so the accessor count stops growing well
+     * before this.
      */
     public static final int DEFAULT_MAX_DEPTH = 5;
 

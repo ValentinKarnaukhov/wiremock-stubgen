@@ -18,15 +18,13 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Loads and renders the Mustache templates the Java target emits from.
  *
- * <p>Templates are Mustache for one reason above all others: the people who will use this
- * plugin already override openapi-generator's Mustache templates for the client the stubs
- * are typed against. Reusing that syntax means a generated file is something they can take
- * over rather than something they have to live with — which is most of why a generator is
- * tolerated at all.
+ * <p>Mustache because consumers already override openapi-generator's Mustache templates
+ * for the client the stubs are typed against, so a generated file is something they can
+ * take over.
  *
  * <p>A template is looked up in the directory named by the {@code templateDirectory}
  * option first and on the classpath second, so a consumer may replace one template without
- * having to supply the rest.
+ * supplying the rest.
  */
 final class Templates {
 

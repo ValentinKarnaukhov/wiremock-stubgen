@@ -21,14 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Holds the generator to the stubs that were written by hand before it existed.
  *
- * <p>The goldens have been documentation until now — compiled, read, argued over, but
- * never compared with anything. This is the comparison. What it checks is not that the
- * generator works but that the description it works from is complete: every time a golden
- * says something the model cannot express, that shows up here as a missing line.
- *
- * <p>All five goldens are compared in full. Two are covered by the whole-body form alone;
- * the other three are the ones that pin down the builders and matchers, which is where
- * most of what the generator has to get right actually lives.
+ * <p>What this checks is not that the generator works but that the description it works
+ * from is complete: every time a golden says something the model cannot express, that
+ * shows up here as a missing line. All five goldens are compared in full; three of them
+ * pin down the builders and matchers.
  */
 class GoldenComparisonTest {
 

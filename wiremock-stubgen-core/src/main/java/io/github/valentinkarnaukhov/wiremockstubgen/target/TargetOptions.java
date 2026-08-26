@@ -47,13 +47,11 @@ public record TargetOptions(
     /**
      * Where the model classes a stub refers to are to be found.
      *
-     * <p>This generator does not produce models and does not want to. The consumer
-     * already runs openapi-generator against the same specification to get a client, and
-     * a second set of classes for the same schemas would be a second thing to keep in
-     * step. So stubs import the consumer's, and there is no sensible default for where
-     * those live.
+     * <p>This generator does not produce models: the consumer already runs
+     * openapi-generator against the same specification, so stubs import theirs and there
+     * is no sensible default.
      *
-     * <p>Empty means a target cannot emit anything that names a body type: no
+     * <p>Empty means a target cannot emit anything that names a body type — no
      * {@code code200(CompositeBody)}, no {@code requestBody(CompositeBody)}. Field
      * accessors do not need it, so this degrades rather than fails.
      */
@@ -64,19 +62,13 @@ public record TargetOptions(
     /**
      * Whether to describe bodies field by field, or only whole.
      *
-     * <p>Switched off, a stub keeps exactly the forms that take a model the caller
-     * already has — {@code code200(CompositeBody)}, {@code requestBody(CompositeBody)} —
-     * and no builders, matchers or flattened accessors are generated at all.
+     * <p>Switched off, a stub keeps only the forms that take a model the caller already
+     * has — {@code code200(CompositeBody)}, {@code requestBody(CompositeBody)} — and no
+     * builders, matchers or flattened accessors are generated.
      *
-     * <p>This costs a target almost nothing, because the same branch is compulsory
-     * anyway: a bare string body, an empty response and an array of primitives all make
-     * the flattener return nothing, and something still has to be emitted for them. The
-     * switch simply chooses that branch on purpose rather than having it forced by the
-     * schema.
-     *
-     * <p>It does interact with {@link #modelPackageIfPresent()}. The whole-body forms are
-     * the only ones that name a model type, so a stub generated with explosion off and no
-     * model package can describe nothing about its body whatsoever.
+     * <p>Those whole-body forms are the only ones that name a model type, so a stub
+     * generated with explosion off and no {@link #modelPackageIfPresent()} can describe
+     * nothing about its body at all.
      */
     public boolean explode() {
         return explode;

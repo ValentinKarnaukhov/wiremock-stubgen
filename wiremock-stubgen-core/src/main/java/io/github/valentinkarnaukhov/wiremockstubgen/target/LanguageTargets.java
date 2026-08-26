@@ -7,17 +7,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.ServiceLoader;
 
-/**
- * Locates {@link LanguageTarget} implementations on the classpath.
- */
+/** Locates {@link LanguageTarget} implementations on the classpath. */
 public final class LanguageTargets {
 
     private LanguageTargets() {
     }
 
-    /**
-     * All targets visible to the given class loader, ordered by {@link LanguageTarget#id()}.
-     */
+    /** All targets visible to the given class loader, ordered by {@link LanguageTarget#id()}. */
     public static List<LanguageTarget> available(ClassLoader classLoader) {
         Objects.requireNonNull(classLoader, "classLoader");
         List<LanguageTarget> targets = new ArrayList<>();

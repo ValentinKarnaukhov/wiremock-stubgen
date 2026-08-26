@@ -28,14 +28,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * The generated stubs, used the way a test in a real project would use them.
  *
- * <p>This is the only place where the whole chain runs: the Maven plugin reads the
- * specification during the build, the stubs it writes are compiled against models a real
+ * <p>The only place where the whole chain runs: the Maven plugin reads the specification
+ * during the build, the stubs it writes are compiled against models a real
  * openapi-generator produced, and what they register is served by a real WireMock over a
- * real socket. Everything up to here is checked by comparing text.
+ * real socket.
  *
- * <p>Which is why the assertions are about responses and not about generated source. If a
- * stub compiles and serves what it was told to serve, the generator did its job; how it
- * spelled that is the goldens' business.
+ * <p>Hence the assertions are about responses, not about generated source; how a stub is
+ * spelled is the goldens' business.
  */
 class LibraryStubsTest {
 
@@ -93,8 +92,8 @@ class LibraryStubsTest {
     }
 
     /**
-     * The same operation, its other declared status code. Both are typed; neither could
-     * have been written without the specification saying 404 answers with a Problem.
+     * The same operation, its other declared status code. Both are typed because the
+     * specification says 404 answers with a Problem.
      */
     @Test
     void servesTheDeclaredErrorForAnUnknownBook() throws Exception {
@@ -182,8 +181,8 @@ class LibraryStubsTest {
     }
 
     /**
-     * The form that takes a body the caller already has. It exists for the case the
-     * builders cannot serve: a body assembled somewhere else, by something else.
+     * The form that takes a body the caller already has, for the case the builders cannot
+     * serve: a body assembled somewhere else.
      */
     @Test
     void servesABodyTheCallerAlreadyHas() throws Exception {
@@ -201,11 +200,8 @@ class LibraryStubsTest {
 
     /**
      * The shapes a large specification is written in, all reached through the same
-     * accessors as everything else.
-     *
-     * <p>Each one of these was a stub that did not compile, or a body that silently went
-     * out empty, and none of them was visible from the generated source alone — which is
-     * why the check is here, where the stub meets models the model generator really wrote.
+     * accessors as everything else. Checked live, because none of these failures was
+     * visible from the generated source alone.
      */
     @Test
     void servesTheShapesLargeSpecificationsAreWrittenIn() throws Exception {
@@ -281,11 +277,10 @@ class LibraryStubsTest {
     /**
      * A body a specification describes with {@code oneOf}.
      *
-     * <p>Worth serving live rather than merely compiling, because the two generator
-     * versions disagree about what such a schema is called. A composition naming one
-     * alternative has that alternative's shape, and reading it as the member is the only
-     * reading that compiles under both — which is why the accessors below are the member's,
-     * and why they flatten on through the reference to a borrower.
+     * <p>Served live because the two generator versions disagree about what such a schema
+     * is called: a composition naming one alternative has that alternative's shape, and
+     * reading it as the member is the only reading that compiles under both. Hence the
+     * accessors below are the member's, flattening on through the reference to a borrower.
      */
     @Test
     void servesABodyDescribedAsOneOfASingleAlternative() throws Exception {

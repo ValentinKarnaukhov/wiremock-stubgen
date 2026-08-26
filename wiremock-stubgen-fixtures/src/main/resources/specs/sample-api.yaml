@@ -372,8 +372,6 @@ components:
         recursive:
           $ref: "#/components/schemas/RecursiveBody"
     # Properties named after methods the generated scope inherits from the runtime.
-    # Reserved names were previously covered only as operation parameters, which stopped
-    # being the dangerous case once bodies moved off the stub and onto builders.
     ReservedNamesBody:
       type: object
       properties:

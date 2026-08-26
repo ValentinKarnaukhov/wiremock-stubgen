@@ -16,15 +16,14 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathTemplate;
  * GOLDEN REFERENCE — hand-written specification of the generator's output.
  * Source: sample-api.yaml, operation getByInPathParameters.
  *
- * <p>Demonstrates: templated paths. The predecessor project declared a urlPattern
- * field and never assigned it, so paths with parameters did not work at all.
+ * <p>Demonstrates: templated paths.
  */
 public final class GetByInPathParametersStub extends AbstractStub<GetByInPathParametersStub> {
 
     /**
      * Kept as a template rather than assembled by concatenation, so that an unset
-     * parameter degrades to "match any value in this segment" instead of
-     * producing a broken URL.
+     * parameter degrades to "match any value in this segment" instead of producing
+     * a broken URL.
      */
     private static final String PATH_TEMPLATE = "/get/parameters/in-path/{stringParam}/{longParam}";
 
@@ -58,24 +57,16 @@ public final class GetByInPathParametersStub extends AbstractStub<GetByInPathPar
 
     // ── NOTES ─────────────────────────────────────────────────────────────────
     //
-    // 1. urlPathTemplate and withPathParam are WireMock 3.x only; 2.x has no
-    //    equivalent and needs a hand-built regular expression. This is the first
-    //    place where "WireMock 3 only" stops being a preference and becomes a
-    //    hard constraint on the generated code.
+    // 1. urlPathTemplate and withPathParam are WireMock 3.x only; 2.x needs a
+    //    hand-built regular expression. "WireMock 3 only" is a hard constraint on
+    //    the generated code, not a preference.
     //
-    // 2. Method names carry the parameter's location as a prefix — pathStringParam,
-    //    queryStringParam, headerXRequestId. A specification is free to declare a
-    //    path parameter and a query parameter of the same name; without the prefix
-    //    that produces two methods with identical signatures and the class does not
-    //    compile. Prefixing only on collision would keep names shorter, but then a
-    //    name depends on the rest of the operation, so unrelated edits to the
-    //    specification churn the generated code. The rule covers any type we derive
-    //    from a parameter too, should one ever appear — today none does, since
-    //    enum parameters are Strings.
+    // 2. Method names carry the parameter's location as a prefix, because a
+    //    specification may declare a path and a query parameter of the same name,
+    //    which would otherwise be two identical signatures. Prefixing only on
+    //    collision would make a name depend on the rest of the operation.
     //
-    // 3. Nothing here builds the response. Status, body, media type, serialisation
-    //    and code(int) live in AbstractStub, which is why toRequest returns a bare
-    //    matcher. Only the typed per-code methods are generated, and each is a
-    //    single delegation to response(status, body).
+    // 3. Nothing here builds the response: status, body, media type, serialisation
+    //    and code(int) live in AbstractStub.
     // ──────────────────────────────────────────────────────────────────────────
 }

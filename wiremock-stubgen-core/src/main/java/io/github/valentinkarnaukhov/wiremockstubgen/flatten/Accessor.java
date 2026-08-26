@@ -10,10 +10,9 @@ import java.util.Optional;
  * One method on a generated body scope, and the route through the schema it stands for.
  *
  * <p>The name is flattened and the path is not: {@code compositeDeepFieldDeepestField}
- * against {@code [composite, deepField, deepestField]}. Both are needed. A response
- * emitter walks the path to know which objects to materialise, a request emitter joins it
- * into a JSONPath, and neither can recover it from the name — camel-joining is not
- * reversible once a property name contains a capital of its own.
+ * against {@code [composite, deepField, deepestField]}. Both are needed, and the path
+ * cannot be recovered from the name — camel-joining is not reversible once a property
+ * name contains a capital of its own.
  *
  * @param kind         what shape of method this becomes
  * @param name         the accessor name, already flattened, sanitised and escaped
@@ -23,9 +22,8 @@ import java.util.Optional;
  *                     is what the signature is built from on both sides
  * @param targetSchema for {@link Kind#NESTED_LIST} the schema of the elements, otherwise
  *                     {@code null}
- * @param readOnly     whether the property this ends at is read-only, carried from
- *                     {@link io.github.valentinkarnaukhov.wiremockstubgen.spec.Property} because
- *                     only the last hop of the path decides how the value is written
+ * @param readOnly     whether the property this ends at is read-only; only the last hop of
+ *                     the path decides how the value is written
  */
 public record Accessor(Kind kind, String name, List<String> path, TypeRef type, String targetSchema,
                        boolean readOnly) {
@@ -35,8 +33,8 @@ public record Accessor(Kind kind, String name, List<String> path, TypeRef type, 
         VALUE,
         /**
          * An array of anything that is not a described object. A leaf, because there is
-         * nothing inside an element to reach for — which is exactly why the two sides can
-         * disagree about the signature without either being wrong.
+         * nothing inside an element to reach for, which is why the two sides may disagree
+         * about the signature.
          */
         VALUE_LIST,
         /** An array of described objects: hands out the scope named by {@link #targetSchema}. */

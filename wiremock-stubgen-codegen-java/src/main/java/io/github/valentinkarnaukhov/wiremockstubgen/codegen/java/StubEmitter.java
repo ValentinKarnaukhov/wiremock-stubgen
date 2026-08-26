@@ -28,14 +28,14 @@ import java.util.Set;
 /**
  * Builds the view of one stub class and hands it to a template.
  *
- * <p>Everything the generated class does at runtime is inherited. What is generated is
- * the typed surface: a method per parameter, a method per declared status code, a request
- * body method, and the one override that says which request this stub is about. That
- * split is deliberate — anything written into a generated file is a thing a consumer
- * cannot fix without regenerating.
+ * <p>Everything the generated class does at runtime is inherited; what is generated is
+ * only the typed surface — a method per parameter, a method per declared status code, a
+ * request body method, and the override that says which request this stub is about.
+ * Anything written into a generated file is a thing a consumer cannot fix without
+ * regenerating.
  *
  * <p>This class decides <em>what</em> appears; {@code stub.mustache} decides how it is
- * laid out. Keeping the two apart is what makes the layout replaceable.
+ * laid out.
  */
 final class StubEmitter {
 
@@ -49,17 +49,9 @@ final class StubEmitter {
      * Names a generated scope may not use, because the runtime base it extends already
      * declares them.
      *
-     * <p>The set comes from the language target and not from the core: these are method
-     * names on a Java class, not keywords, and another target's runtime will have its own.
-     * It is the union across both sides on purpose — {@code path()} is declared only on a
-     * matcher, but escaping it only there would make one schema read differently depending
-     * on which end of the operation you met it at, which is the whole thing the two-sided
-     * naming rule exists to prevent.
-     *
-     * <p>Arity is not consulted, for the same reason. {@code exit(String)} is a legal
-     * overload of the final {@code exit()} and would compile; a name that changed shape
-     * according to whether the property happened to be a list would be worse than the
-     * underscore.
+     * <p>Java method names, so this belongs to the language target and not the core. It is
+     * the union across both sides, and ignores arity, so that one schema does not read
+     * differently depending on which end of the operation it was met at.
      */
     private static final Set<String> RESERVED = Set.of(
             // AbstractBodyScope
@@ -147,10 +139,9 @@ final class StubEmitter {
     /**
      * Flattens a body, unless it must not be flattened at all.
      *
-     * <p>Two things stop it. {@code explode=false} says so outright. A missing model
-     * package is the quieter one: a builder names the schema of every object it creates,
-     * and without a model package there is no name to use — so the stub falls back to the
-     * whole-body form, which only has to name the body itself and can degrade to Object.
+     * <p>{@code explode=false} says so outright. A missing model package is the quieter
+     * one: a builder names the schema of every object it creates, so without a model
+     * package the stub falls back to the whole-body form, which can degrade to Object.
      */
     private Optional<BodyModel> takeApart(TypeRef body, BodySide side) {
         if (!options.explode() || options.modelPackageIfPresent().isEmpty()) {
@@ -160,9 +151,8 @@ final class StubEmitter {
     }
 
     /**
-     * One class per scope across the whole operation. Two status codes declaring one
-     * schema is the case this exists for: they keep their own methods, and share the
-     * builder those methods hand out.
+     * One class per scope across the whole operation, so that two status codes declaring
+     * one schema keep their own methods but share the builder they hand out.
      */
     private static Map<String, BodyScope> indexed(List<BodyModel> models) {
         Map<String, BodyScope> byId = new LinkedHashMap<>();
@@ -260,11 +250,9 @@ final class StubEmitter {
 
     /**
      * A parameter's location is part of its method name — {@code pathStringParam},
-     * {@code queryStringParam}. A specification may declare a path and a query parameter
-     * of the same name, which without the prefix is two methods with identical signatures
-     * and a class that does not compile. Prefixing only on collision would read better and
-     * would make a name depend on the rest of the operation, so an unrelated edit to the
-     * specification would churn code the consumer has already written against.
+     * {@code queryStringParam} — because a specification may declare a path and a query
+     * parameter of the same name, which would otherwise be two identical signatures.
+     * Prefixing only on collision would make a name depend on the rest of the operation.
      */
     private static String methodNameOf(Parameter parameter) {
         String prefix = parameter.location().name().toLowerCase(Locale.ROOT);
@@ -304,8 +292,8 @@ final class StubEmitter {
 
     /**
      * The no-argument form, which installs a body and hands out a builder over it. The
-     * body is created here rather than lazily so that there is no order in which a builder
-     * is writing into something that does not exist yet.
+     * body is created eagerly so that no ordering leaves a builder writing into something
+     * that does not exist yet.
      */
     private StubView.BuilderEntry builderEntry(BodyModel model, Imports imports) {
         String itemType = imports.use(types.modelType(model.rootSchema()));
@@ -322,8 +310,7 @@ final class StubEmitter {
     /**
      * Falls back to Object when the body names a schema and no model package is set. The
      * stub still works — WireMock serialises whatever it is handed — but the compiler
-     * stops checking the one call it exists to check, which is why the plugin warns about
-     * a missing model package rather than letting it pass unremarked.
+     * stops checking the one call it exists to check, which is why the plugin warns.
      */
     private String bodyType(TypeRef body) {
         return types.nameOf(body).orElse("java.lang.Object");

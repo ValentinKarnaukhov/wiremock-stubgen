@@ -63,10 +63,9 @@ public final class GetByInQueryParametersStub extends AbstractStub<GetByInQueryP
     }
 
     /**
-     * String, not a generated enum. openapi-generator renders an inline enum
-     * parameter as a plain String in every Java client library, so there is no
-     * enum type to reuse — and inventing one here would make the consumer convert
-     * between our type and the String their own client hands them.
+     * String, not a generated enum: openapi-generator renders an inline enum
+     * parameter as a plain String in every Java client library, so there is no enum
+     * type to reuse and inventing one would force the consumer to convert.
      */
     public GetByInQueryParametersStub queryEnumParam(String value) {
         queryParams.put("enumParam", equalTo(value));
@@ -85,39 +84,21 @@ public final class GetByInQueryParametersStub extends AbstractStub<GetByInQueryP
 
     // ── OPEN QUESTIONS ────────────────────────────────────────────────────────
     //
-    // 1. No pattern overloads, for now. Every setter matches on equality, so
-    //    anything else — a regular expression, a prefix, "absent", "any value" —
-    //    is only reachable through customize():
+    // 1. No pattern overloads yet. Every setter matches on equality, so anything
+    //    else is only reachable through customize(), which puts the parameter name
+    //    back as a string literal and loses the rename check. Deferred: an overload
+    //    per parameter doubles the method count, and offering it for strings alone
+    //    is arbitrary.
     //
-    //        .customize(b -> b.withQueryParam("stringParam", matching("ORD-\\d+")))
+    // 2. Enum parameters are Strings. openapi-generator 7.9.0 produces no type at
+    //    all for an inline enum in a parameter. An enum inside a SCHEMA is
+    //    different: it is generated and nested in the model (ErrorBody.EnumFieldEnum)
+    //    and we reference that. The rule is "no types we would be the only ones to
+    //    have". The cost: nothing stops an invalid value.
     //
-    //    That is a real loss, and not only of convenience: the parameter name is
-    //    back as a string literal, so a rename in the specification stops being a
-    //    compile error. Keeping the name in one place is most of the reason this
-    //    generator exists.
-    //
-    //    Deferred rather than decided. An overload per parameter doubles the
-    //    method count — fourteen methods here for seven parameters — and offering
-    //    it for strings alone, as an earlier draft did, is arbitrary: matching
-    //    "\\d{3}" against an integer parameter is just as reasonable. Revisit once
-    //    there is evidence of how often patterns are actually wanted.
-    //
-    // 3. Enum parameters are Strings, deliberately. Verified against
-    //    openapi-generator 7.9.0: an inline enum in a parameter produces no type
-    //    at all — resttemplate, webclient, native and okhttp-gson all render it as
-    //    String. An enum inside a SCHEMA is different: it is generated, nested in
-    //    the model (ErrorBody.EnumFieldEnum), and we reference that rather than
-    //    duplicate it. So the rule is not "no enums", it is "no types we would be
-    //    the only ones to have".
-    //
-    //    The cost is real: nothing stops an invalid value, and the specification's
-    //    permitted values survive only as documentation. Revisit if it bites.
-    //
-    // 2. Optional versus required. Every parameter here is required:false, and
-    //    the generated code treats absence as "do not match on it". A required
-    //    parameter arguably deserves enforcement — but failing at mock() time is
-    //    a runtime error, which is exactly what this project exists to avoid. A
-    //    constructor argument would enforce it at compile time, at the cost of an
-    //    unusable signature once there are five required parameters.
+    // 3. Optional versus required. Absence is treated as "do not match on it".
+    //    Enforcing required at mock() time would be a runtime error, which is what
+    //    this project exists to avoid; a constructor argument enforces it at
+    //    compile time but is unusable past a few parameters.
     // ──────────────────────────────────────────────────────────────────────────
 }

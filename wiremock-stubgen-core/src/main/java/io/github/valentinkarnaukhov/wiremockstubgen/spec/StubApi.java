@@ -11,12 +11,7 @@ import java.util.Optional;
  * those operations refer to, and the spec-level title used to derive default naming.
  *
  * <p>This type — and everything else under {@code spec} — is deliberately free of any
- * target-language concepts. It describes what the specification says, not what any
- * particular language should emit.
- *
- * <p>The schema catalogue is new. While a stub's body was a single typed argument the
- * name of a schema was all the emitter needed; now that a stub declares a builder per
- * schema with a method per leaf, it has to know what is inside one.
+ * target-language concepts.
  *
  * @param title      the specification title
  * @param operations every operation the specification declares
@@ -31,11 +26,8 @@ public record StubApi(String title, List<Operation> operations, Map<String, Obje
     }
 
     /**
-     * Looks up the object schema a type refers to, if it refers to one at all.
-     *
-     * <p>Reaches through arrays and maps, so an operation answering with
-     * {@code array<CompositeBody>} resolves to CompositeBody. That is what a caller
-     * almost always wants: the container is not something a builder is generated for.
+     * Looks up the object schema a type refers to, reaching through arrays and maps: an
+     * operation answering with {@code array<CompositeBody>} resolves to CompositeBody.
      */
     public Optional<ObjectSchema> schemaOf(TypeRef type) {
         return Optional.ofNullable(type)
@@ -44,11 +36,8 @@ public record StubApi(String title, List<Operation> operations, Map<String, Obje
     }
 
     /**
-     * The schemas actually reachable from the operations, in the order they are first
-     * met.
-     *
-     * <p>A specification routinely declares schemas nothing responds with — shared
-     * components, request-only envelopes, leftovers from an earlier version. Emitting a
+     * The schemas actually reachable from the operations, in the order they are first met.
+     * A specification routinely declares schemas nothing responds with, and emitting a
      * builder for those would be noise.
      */
     public Map<String, ObjectSchema> reachableSchemas() {

@@ -8,11 +8,9 @@ import java.util.Objects;
  * @param name     the wire name, exactly as written in the specification
  * @param type     the property type
  * @param required whether the schema lists this property as required
- * @param readOnly whether the specification says only a server ever sends this. It
- *                 belongs here rather than being dropped during reading because a target
+ * @param readOnly whether the specification says only a server ever sends this. A target
  *                 has to know: a model generator gives a read-only property no setter, so
- *                 the code that writes to it cannot look like the code that writes to any
- *                 other property.
+ *                 writing to it cannot look like writing to any other property.
  */
 public record Property(String name, TypeRef type, boolean required, boolean readOnly) {
 

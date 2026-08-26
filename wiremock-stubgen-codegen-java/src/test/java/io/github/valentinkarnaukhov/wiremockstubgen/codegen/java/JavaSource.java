@@ -4,18 +4,14 @@ import java.util.List;
 
 /**
  * Reduces Java source to the declarations it makes, so two files can be compared for what
- * they say rather than how they are annotated.
+ * they say rather than how they are commented.
  *
- * <p>The golden stubs are hand-written and carry long design notes — why the type
- * parameter survives, what is still open about matching. Those are notes to us, not
- * output the generator should produce, so a verbatim comparison would fail for the one
- * reason that does not matter. Stripping comments from both sides leaves exactly the part
- * a golden is meant to pin down.
+ * <p>The golden stubs carry hand-written design notes that the generator is not meant to
+ * produce, so a verbatim comparison would fail for the one reason that does not matter.
  *
- * <p>Whitespace is <em>not</em> normalised away. Indentation and blank lines are part of
- * what this generator delivers: the output is read by people, and a stub nobody wants to
- * open is not much better than no stub. Blank lines go, because where a stripped comment
- * leaves a gap is not something worth asserting.
+ * <p>Whitespace is <em>not</em> normalised away: indentation is part of what this
+ * generator delivers. Blank lines are dropped, because where a stripped comment leaves a
+ * gap is not worth asserting.
  */
 final class JavaSource {
 
@@ -31,11 +27,9 @@ final class JavaSource {
     }
 
     /**
-     * Removes comments without being fooled by the contents of string literals.
-     *
-     * <p>A regular expression is the obvious shortcut and is wrong here: generated stubs
-     * are full of JSONPath expressions and URL templates, and one of them containing
-     * {@code //} would silently delete the rest of the line.
+     * Removes comments without being fooled by the contents of string literals. A regular
+     * expression is wrong here: generated stubs are full of JSONPath expressions and URL
+     * templates, and one containing {@code //} would silently delete the rest of the line.
      */
     private static String stripComments(String source) {
         StringBuilder out = new StringBuilder(source.length());

@@ -57,10 +57,8 @@ public final class GetResponseErrorsStub extends AbstractStub<GetResponseErrorsS
     }
 
     /**
-     * 500 declares the same schema as 404. The methods stay separate, because they
-     * are generated per declared code and the generated API keeps the shape of the
-     * specification — but they hand out the same builder, so the fields behind them
-     * are written once.
+     * 500 declares the same schema as 404. The methods stay separate, being generated
+     * per declared code, but hand out the same builder.
      */
     public GetResponseErrorsStub code500(ErrorBody body) {
         return response(500, body);
@@ -80,14 +78,9 @@ public final class GetResponseErrorsStub extends AbstractStub<GetResponseErrorsS
     // ── BODY BUILDERS ─────────────────────────────────────────────────────────
     //
     // ErrorBodyBuilder is where sharing within an operation pays: one class serves
-    // 404 and 500, where the flat design had to emit response404Code,
-    // response404Message, response500Code and response500Message for the same two
-    // fields.
-    //
-    // CompositeFieldListBuilder below is where nesting costs: it is character for
-    // character the class GetResponseCompositeListStub declares, written out again
-    // because that stub's copy is not in scope here. Locality was preferred to
-    // sharing deliberately — one operation, one file.
+    // 404 and 500. CompositeFieldListBuilder is where nesting costs: it repeats the
+    // class GetResponseCompositeListStub declares, because that copy is not in
+    // scope here. Locality was preferred to sharing — one operation, one file.
 
     public final class CompositeBodyBuilder<P> extends AbstractResponseBodyBuilder<P> {
 
@@ -211,49 +204,28 @@ public final class GetResponseErrorsStub extends AbstractStub<GetResponseErrorsS
     // ── NOTES ─────────────────────────────────────────────────────────────────
     //
     // ONE STUB IS ONE MAPPING, HENCE ONE RESPONSE.
-    // A stub cannot answer 200 and 404 at the same time; the status and the body
-    // are a single pair. Calling two codeNNN methods therefore cannot mean "both"
-    // — the last call wins, silently, exactly like any other setter. Decided
-    // deliberately: failing on the second call would trade a compile-time-shaped
-    // API for a runtime exception, and this generator exists to move errors the
-    // other way.
-    //
-    // Returning different responses in sequence is a WireMock scenario, not a
-    // property of one mapping. That stays outside the generated surface and is
+    // Calling two codeNNN methods cannot mean "both" — the last call wins, like any
+    // other setter. Failing on the second call would trade a compile-time-shaped
+    // API for a runtime exception. Responses in sequence are a WireMock scenario,
     // reached through customize(...).
     //
     // CLOSED — AN ACCESSOR AGAINST THE WRONG CODE.
-    // The flat design could declare the 200 body and then answer 404, handing a
-    // CompositeBody description to an ErrorBody. Binding each accessor to a status
-    // fixed it at the price of putting the code in every name, and of emitting the
-    // ErrorBody accessors twice. The builder closes it outright: the only way to
-    // reach ErrorBodyBuilder is through code404() or code500(), which have already
-    // installed an ErrorBody. There is nothing left to guard.
+    // The only way to reach ErrorBodyBuilder is through code404() or code500(),
+    // which have already installed an ErrorBody. Nothing left to guard.
     //
-    // NAMING. codeNNN was chosen over respondNNN / willReturnNNN because the
-    // number is the whole message and a shorter prefix keeps it prominent. It also
-    // cannot collide with a parameter-derived name: parameter methods carry a
-    // location prefix (queryStringParam, pathStringParam), and no location is spelt
-    // "code".
+    // NAMING. codeNNN cannot collide with a parameter-derived name, because
+    // parameter methods carry a location prefix and no location is spelt "code".
     //
-    // OPEN — DEFAULT RESPONSE.
-    // This operation declares no "default" response. When one is present the
-    // natural mapping is codeDefault(Schema), but the status to send is then
-    // unknown and would have to be supplied: codeDefault(503, body). Not settled,
-    // and the fixture does not cover it yet.
+    // OPEN — DEFAULT RESPONSE. codeDefault(Schema) is the natural mapping, but the
+    // status to send is then unknown and would have to be supplied. Not covered by
+    // the fixture.
     //
-    // OPEN — CONTENT TYPE.
-    // AbstractStub defaults to application/json, which every response in the
-    // fixture declares. For anything else the generated code would call
-    // contentType(...) — but serialisation would then also have to stop being JSON,
-    // and an operation declaring several media types for one code has no obvious
-    // shape at all. Uncovered by the fixture.
+    // OPEN — CONTENT TYPE. AbstractStub defaults to application/json. Anything else
+    // would also have to stop serialising as JSON, and several media types for one
+    // code have no obvious shape. Uncovered by the fixture.
     //
-    // OPEN — NO RESPONSE SELECTED.
-    // If the user calls neither codeNNN nor code, AbstractStub answers 200 with no
-    // body at all. That is defensible for an operation whose 200 declares no
-    // content, and misleading for this one, where 200 declares CompositeBody and
-    // the client will fail to deserialise nothing. Whether an unset body should be
-    // a failure when the selected code declares a schema is undecided.
+    // OPEN — NO RESPONSE SELECTED. AbstractStub answers 200 with no body, which is
+    // misleading when 200 declares a schema and the client fails to deserialise
+    // nothing. Whether that should be a failure is undecided.
     // ──────────────────────────────────────────────────────────────────────────
 }

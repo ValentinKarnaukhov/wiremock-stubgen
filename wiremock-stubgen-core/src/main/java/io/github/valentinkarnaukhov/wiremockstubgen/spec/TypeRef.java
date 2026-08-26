@@ -7,21 +7,19 @@ import java.util.Optional;
  * A language-neutral reference to a type described by the specification.
  *
  * <p>Deliberately expressed in OpenAPI terms ({@code type}/{@code format}/schema name)
- * rather than in target-language terms. Mapping {@code string+date-time} onto
- * {@code OffsetDateTime} or {@code LocalDateTime} is a decision that belongs to a
- * language target, because it must agree with whatever model generator the user runs.
+ * rather than in target-language terms: mapping {@code string+date-time} onto
+ * {@code OffsetDateTime} or {@code LocalDateTime} belongs to a language target, because
+ * it must agree with whatever model generator the user runs.
  *
  * @param kind        broad shape of the type
  * @param schemaName  component schema name for {@link Kind#OBJECT} and {@link Kind#ENUM}, otherwise {@code null}
  * @param openApiType the OpenAPI {@code type} keyword for {@link Kind#PRIMITIVE}, otherwise {@code null}
  * @param format      the OpenAPI {@code format} keyword, may be {@code null}
  * @param items       element type for {@link Kind#ARRAY} and value type for {@link Kind#MAP}, otherwise {@code null}
- * @param declaringSchema the schema a {@link Kind#ENUM} belongs to when it was written
- *                    inside that schema rather than declared on its own, otherwise
+ * @param declaringSchema the schema a {@link Kind#ENUM} was written inside, otherwise
  *                    {@code null}. Kept apart from {@code schemaName} because how the two
  *                    are joined is a language's business: Java nests the enum inside the
- *                    model class, and another target may well flatten the two names into
- *                    one.
+ *                    model class.
  */
 public record TypeRef(
         Kind kind,
@@ -58,10 +56,8 @@ public record TypeRef(
     }
 
     /**
-     * An enum written inside a schema rather than declared on its own.
-     *
-     * <p>It needs a name of its own because the model generator gives it one, and stubs
-     * have to say the same name or the caller cannot pass the value at all.
+     * An enum written inside a schema rather than declared on its own. It needs a name of
+     * its own because the model generator gives it one, and stubs must say the same name.
      */
     public static TypeRef nestedEnumeration(String declaringSchema, String schemaName) {
         return new TypeRef(Kind.ENUM,

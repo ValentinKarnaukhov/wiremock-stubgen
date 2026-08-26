@@ -7,9 +7,8 @@ import java.util.TreeSet;
 /**
  * Collects imports while a source file is being written, and renders the block at the end.
  *
- * <p>The emitter names every type in full and asks this to shorten it. Deciding imports
- * up front would mean predicting which types the body will mention, and the two would
- * drift apart the first time a branch stopped emitting something.
+ * <p>The emitter names every type in full and asks this to shorten it. Deciding imports up
+ * front would mean predicting which types the body will mention.
  */
 final class Imports {
 
@@ -24,15 +23,13 @@ final class Imports {
     }
 
     /**
-     * Registers a type and hands back the name to write.
+     * Registers a type and hands back the name to write. Understands generics, so
+     * {@code java.util.List<com.example.Body>} imports both and comes back as
+     * {@code List<Body>}.
      *
-     * <p>Understands generics, so {@code java.util.List<com.example.Body>} imports both and
-     * comes back as {@code List<Body>}.
-     *
-     * <p>A nested type is written with a dollar between the outer class and the member,
-     * as {@code com.example.Holder$MethodEnum}, and comes back as {@code Holder.MethodEnum}.
-     * A dollar rather than a dot because only the caller knows where the package ends, and
-     * guessing by capitalisation would be a convention standing in for a fact.
+     * <p>A nested type is written with a dollar between outer class and member, as
+     * {@code com.example.Holder$MethodEnum}, and comes back as {@code Holder.MethodEnum}.
+     * A dollar rather than a dot because only the caller knows where the package ends.
      */
     String use(String fullyQualified) {
         StringBuilder result = new StringBuilder();
@@ -67,8 +64,8 @@ final class Imports {
             return type;
         }
         String packageName = type.substring(0, type.lastIndexOf('.'));
-        // java.lang and the file's own package need no import, and adding one is not
-        // merely noise: some styles treat a redundant java.lang import as an error.
+        // java.lang and the file's own package need no import, and some styles treat a
+        // redundant java.lang import as an error.
         if (!packageName.equals("java.lang") && !packageName.equals(ownPackage)) {
             types.add(type);
         }
@@ -81,8 +78,7 @@ final class Imports {
 
     /**
      * The import block, in three groups: everything else, then {@code java.*}, then static.
-     * That is the order IntelliJ produces by default, which is the order the goldens were
-     * written in and the order a consumer's own code will already be in.
+     * The order IntelliJ produces by default, which is the order the goldens are in.
      */
     List<String> render() {
         List<String> lines = new java.util.ArrayList<>();

@@ -5,25 +5,14 @@ import java.lang.reflect.Field;
 /**
  * Writes a property the model generator deliberately left without a setter.
  *
- * <p>A property marked {@code readOnly} in the specification is one a server sends and a
- * client never submits, so openapi-generator emits a getter and no setter at all. The only
- * public way in is a constructor taking every read-only property of the class at once —
- * verified on 7.24.0, which also confirmed that the same thing happens when {@code
- * readOnly} sits on a referenced schema, on an {@code allOf}, or on an array.
+ * <p>openapi-generator emits a {@code readOnly} property with a getter and no setter; the
+ * only public way in is a constructor taking every read-only property at once, which a
+ * builder told one property at a time cannot use. Skipping such properties is worse: a
+ * stub plays the server, and these are exactly the fields only a server produces.
  *
- * <p>That constructor cannot serve a builder. A builder is told one property at a time and
- * has already created the object by the time the second arrives, so using the constructor
- * would mean either buffering every value until the body is finished — which the nested
- * scopes hand out eagerly — or rebuilding the object and copying across everything set so
- * far. Both trade a working accessor for a large amount of generated machinery.
- *
- * <p>Skipping these properties instead was the other option and is worse. A stub exists to
- * play the server, and read-only properties are precisely the ones only a server produces:
- * a response body that cannot carry them is missing the fields the test came for.
- *
- * <p>So the field is written directly. This is the one place in the generated output that
- * is not checked by the compiler, which is why it is here, named, and documented, rather
- * than inlined into every stub that needs it.
+ * <p>So the field is written by reflection. This is the one place in the generated output
+ * the compiler does not check, which is why it is here, named and documented, rather than
+ * inlined into every stub that needs it.
  */
 public final class ReadOnlyProperties {
 
@@ -35,9 +24,7 @@ public final class ReadOnlyProperties {
      *
      * @param field the Java field name, which is the model generator's camel-cased form of
      *              the property name — the same name its fluent setter would have had
-     * @throws IllegalStateException if the field cannot be found or written, always naming
-     *                               the class and property so the specification can be
-     *                               matched against the model that was actually generated
+     * @throws IllegalStateException if the field cannot be found or written
      */
     public static void set(Object target, String field, Object value) {
         Class<?> owner = target.getClass();

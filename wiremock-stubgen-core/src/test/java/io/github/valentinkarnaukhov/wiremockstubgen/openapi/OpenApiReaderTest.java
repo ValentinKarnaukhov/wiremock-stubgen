@@ -15,10 +15,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Reads the fixture and checks what the reader made of it.
  *
- * <p>The fixture is built out of cases that were awkward in the predecessor — reserved
- * names, several status codes with unrelated schemas, three kinds of recursion — so these
- * assertions are less about the parser working and more about those cases surviving the
- * trip into our own description.
+ * <p>The fixture is built out of awkward cases — reserved names, several status codes with
+ * unrelated schemas, three kinds of recursion — so these assertions are less about the
+ * parser working and more about those cases surviving the trip into our own description.
  */
 class OpenApiReaderTest {
 
@@ -49,8 +48,8 @@ class OpenApiReaderTest {
                 .containsExactly("stringParam", "integerParam", "longParam", "booleanParam",
                         "floatParam", "doubleParam", "enumParam");
 
-        // The wire name survives the trip: renaming it here would silently stop the
-        // generated stub from matching the request the client actually sends.
+        // Renaming the wire name here would silently stop the generated stub from matching
+        // the request the client actually sends.
         Operation inHeader = operation("getByInHeaderParameters");
         assertThat(inHeader.parametersIn(ParameterLocation.HEADER))
                 .extracting(Parameter::name)
@@ -60,8 +59,7 @@ class OpenApiReaderTest {
     @Test
     void readsAnInlineParameterEnumAsItsBaseType() {
         // No Java client library generates a type for an enum declared inline in a
-        // parameter, so reading one as a named type would make the stub the only place
-        // that has it.
+        // parameter, so a named type here would exist only in the stub.
         TypeRef enumParam = operation("getByInQueryParameters").parameters().stream()
                 .filter(p -> p.name().equals("enumParam"))
                 .findFirst().orElseThrow().type();
@@ -72,9 +70,8 @@ class OpenApiReaderTest {
 
     @Test
     void distinguishesFormatsThatShareAnOpenApiType() {
-        // integer/int64 and integer without a format are the same OpenAPI type and
-        // different Java types. Dropping the format here would make that undecidable
-        // later.
+        // integer/int64 and bare integer are the same OpenAPI type and different Java
+        // types, so dropping the format would make that undecidable later.
         assertThat(parameterType("getByInQueryParameters", "integerParam").format()).isNull();
         assertThat(parameterType("getByInQueryParameters", "longParam").format()).isEqualTo("int64");
         assertThat(parameterType("getByInQueryParameters", "floatParam").format()).isEqualTo("float");
@@ -123,8 +120,7 @@ class OpenApiReaderTest {
     @Test
     void resolvesReferencesOneStepAtATime() {
         // swagger-parser does not inline $ref even with setResolve(true), so a property
-        // pointing at another schema is a name here, not a nested structure. Every
-        // consumer of this description resolves the name against the catalogue.
+        // pointing at another schema is a name here, not a nested structure.
         ObjectSchema composite = api.schemas().get("CompositeBody");
 
         assertThat(composite.properties())
@@ -146,8 +142,7 @@ class OpenApiReaderTest {
     @Test
     void readsASchemaThatOmitsTheObjectTypeKeyword() {
         // CompositeField declares properties but no "type: object". Deciding objecthood
-        // from the type keyword alone would drop it, and with it two thirds of the
-        // fixture's nesting.
+        // from the type keyword alone would drop it.
         assertThat(api.schemas()).containsKey("CompositeField");
         assertThat(api.schemas().get("CompositeField").properties())
                 .extracting(Property::name)
@@ -159,8 +154,8 @@ class OpenApiReaderTest {
         SchemaGraph graph = SchemaGraph.of(api.schemas());
 
         // RecursiveBody reaches itself directly, through a list, and through
-        // RecursiveField. Nothing here detects that — the visited set simply makes the
-        // walk finite, which is all the emitter needs from it.
+        // RecursiveField. Nothing here detects that; the visited set only makes the walk
+        // finite.
         assertThat(graph.reachableFrom("RecursiveBody"))
                 .containsExactlyInAnyOrder("RecursiveBody", "RecursiveField");
         assertThat(graph.reachableFrom("CompositeBody"))
@@ -169,9 +164,8 @@ class OpenApiReaderTest {
 
     @Test
     void keepsOnlyTheSchemasTheOperationsCanReach() {
-        // Every schema in the fixture is reachable, so this checks the mechanism rather
-        // than the fixture: reachability is computed from the operations, not from the
-        // components block.
+        // Every schema in the fixture is reachable, so this checks the mechanism:
+        // reachability is computed from the operations, not from the components block.
         assertThat(api.reachableSchemas()).containsOnlyKeys(
                 "CompositeBody", "CompositeField", "CompositeDeepField",
                 "ErrorBody", "RecursiveBody", "RecursiveField",
