@@ -1,6 +1,8 @@
 package io.github.valentinkarnaukhov.wiremockstubgen.codegen.java;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -16,10 +18,25 @@ final class Imports {
 
     private final Set<String> statics = new TreeSet<>();
 
+    /**
+     * Which fully qualified name owns each simple name. Two different types called
+     * {@code List} cannot both be written short, so the first to ask keeps the short form
+     * and everyone else is written out in full.
+     */
+    private final Map<String, String> claimed = new HashMap<>();
+
     private final String ownPackage;
 
     Imports(String ownPackage) {
         this.ownPackage = ownPackage;
+    }
+
+    /**
+     * Keeps a simple name for a type that is never imported, such as the class this file
+     * declares. An import of the same simple name would be shadowed by it.
+     */
+    void reserve(String simpleName) {
+        claimed.put(simpleName, ownPackage + "." + simpleName);
     }
 
     /**
@@ -63,13 +80,21 @@ final class Imports {
         if (type.isEmpty() || !type.contains(".")) {
             return type;
         }
+        String simple = simpleName(type);
+        String owner = claimed.putIfAbsent(simple, type);
+        if (owner != null && !owner.equals(type)) {
+            // Someone else is already writing this simple name. A specification is free to
+            // declare a schema called List, and importing it next to java.util.List would
+            // not compile, so this one is written out in full instead.
+            return type;
+        }
         String packageName = type.substring(0, type.lastIndexOf('.'));
         // java.lang and the file's own package need no import, and some styles treat a
         // redundant java.lang import as an error.
         if (!packageName.equals("java.lang") && !packageName.equals(ownPackage)) {
             types.add(type);
         }
-        return simpleName(type);
+        return simple;
     }
 
     private static String simpleName(String fullyQualified) {

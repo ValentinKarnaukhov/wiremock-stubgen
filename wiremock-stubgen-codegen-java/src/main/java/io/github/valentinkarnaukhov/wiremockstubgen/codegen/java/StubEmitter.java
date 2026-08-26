@@ -87,6 +87,7 @@ final class StubEmitter {
         String packageName = packageOf(operation);
         String className = Identifiers.pascalJoin(operation.operationId()) + "Stub";
         Imports imports = new Imports(packageName);
+        imports.reserve(className);
         BodyEmitter bodies = new BodyEmitter(types, imports, className);
 
         // Order matters: every type name is resolved, and so every import registered,
