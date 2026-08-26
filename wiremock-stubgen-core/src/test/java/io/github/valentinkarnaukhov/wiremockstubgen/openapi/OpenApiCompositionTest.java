@@ -36,7 +36,7 @@ class OpenApiCompositionTest {
 
     @Test
     void readsTheWholeDocumentComplainingOnlyWhereItShould() {
-        assertThat(api.operations()).hasSize(6);
+        assertThat(api.operations()).hasSize(8);
         // The one thing here that genuinely describes no shape is the anyOf of scalars.
         assertThat(warnings).singleElement().asString()
                 .contains("Any", "resolved to no properties at all");
@@ -129,8 +129,42 @@ class OpenApiCompositionTest {
                 .isEqualTo("PostInline200ResponseOrigin");
     }
 
-    // ── names that are not classes ────────────────────────────────────────────
+    @Test
+    void givesOneClassToTheSameShapeWrittenTwice() {
+        // The generator writes RepeatedHere once and types both properties with it. A
+        // class called RepeatedAgain is a name nothing satisfies.
+        assertThat(property("Repeated", "here").type().schemaName()).isEqualTo("RepeatedHere");
+        assertThat(property("Repeated", "again").type().schemaName()).isEqualTo("RepeatedHere");
+        assertThat(api.schemas()).doesNotContainKey("RepeatedAgain");
+    }
 
+    @Test
+    void sharesThatClassAcrossSchemas() {
+        assertThat(property("RepeatedElsewhere", "somewhere").type().schemaName())
+                .isEqualTo("RepeatedHere");
+        assertThat(api.schemas()).doesNotContainKey("RepeatedElsewhereSomewhere");
+    }
+
+    @Test
+    void namesThatClassAfterTheBodyWhenTheBodyIsWrittenFirst() {
+        // The generator reads the paths before the components, so a body written out in
+        // place claims the name over a property written out the same way.
+        assertThat(property("Repeated", "fromBody").type().schemaName())
+                .isEqualTo("PostRepeatedRequest");
+        assertThat(api.schemas()).doesNotContainKey("RepeatedFromBody");
+    }
+
+    @Test
+    void tellsApartShapesWrittenDifferently() {
+        // A description and an order of properties each make a shape of its own, however
+        // alike the two read.
+        assertThat(property("Repeated", "described").type().schemaName())
+                .isEqualTo("RepeatedDescribed");
+        assertThat(property("Repeated", "reordered").type().schemaName())
+                .isEqualTo("RepeatedReordered");
+    }
+
+    // ── names that are not classes ────────────────────────────────────────────
     @Test
     void resolvesANamedArrayToTheArrayRatherThanToAClass() {
         // IdentifiedList is a name for an array. No class by that name is ever generated.

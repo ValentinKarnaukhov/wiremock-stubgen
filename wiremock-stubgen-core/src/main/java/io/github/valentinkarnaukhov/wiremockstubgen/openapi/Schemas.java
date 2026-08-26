@@ -39,6 +39,9 @@ final class Schemas {
 
     private final Map<String, ObjectSchema> resolved = new LinkedHashMap<>();
 
+    /** The name already given to an inline object of each shape. See {@link #inline}. */
+    private final Map<String, String> inlineNames = new LinkedHashMap<>();
+
     private final Consumer<String> warnings;
 
     private final Composition composition;
@@ -50,9 +53,7 @@ final class Schemas {
     }
 
     /**
-     * Resolves every schema the document declares. Must run before the operations are read
-     * so that a body referring to a schema finds it already there; inline bodies then add
-     * to the same map.
+     * Resolves every schema the document declares.
      */
     void readDeclared() {
         declared.forEach(this::register);
@@ -222,11 +223,23 @@ final class Schemas {
      *
      * <p>openapi-generator will generate a model class for this same inline schema, so the
      * name must match what it picks; inventing one of our own is how the two drift apart.
+     *
+     * <p>The generator writes one class per <em>shape</em>, not per place: two inline
+     * objects written out identically, whether in one schema or in schemas far apart,
+     * become a single class named after whichever came first. Naming the second one after
+     * where it sits would name a class the generator never wrote. Identical means written
+     * identically — a description, an order of properties or a {@code required} entry is
+     * enough to tell two shapes apart.
      */
     private TypeRef inline(Schema<?> schema, String nameHint) {
         if (nameHint == null || nameHint.isBlank()) {
             warnings.accept("Ignoring an inline object in a position that gives it no name");
             return TypeRef.unknown();
+        }
+        String shape = String.valueOf(schema);
+        String taken = inlineNames.get(shape);
+        if (taken != null) {
+            return TypeRef.object(taken);
         }
         String name = Identifiers.pascalJoin(nameHint);
         if (declared.containsKey(name)) {
@@ -235,7 +248,11 @@ final class Schemas {
             return TypeRef.unknown();
         }
         register(name, schema);
-        return resolved.containsKey(name) ? TypeRef.object(name) : TypeRef.unknown();
+        if (!resolved.containsKey(name)) {
+            return TypeRef.unknown();
+        }
+        inlineNames.put(shape, name);
+        return TypeRef.object(name);
     }
 
     private String element(String objectName) {

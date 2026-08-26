@@ -107,6 +107,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/Any'
 
+  /repeated:
+    get:
+      operationId: getRepeated
+      tags: [composition]
+      responses:
+        '200':
+          description: The same shape written out in more than one place.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Repeated'
+    post:
+      operationId: postRepeated
+      tags: [composition]
+      # A body written out in place, and written the same as a property below. The
+      # generator reads the paths before the components, so this is the one that names
+      # the class.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                note:
+                  type: string
+      responses:
+        '200':
+          description: Accepted.
+
 components:
 
   parameters:
@@ -187,6 +216,66 @@ components:
         state:
           type: string
           enum: [DRAFT, FINAL]
+
+    # The generator writes one class per shape, not per place. Only the first of these
+    # inline objects gets a class; the rest are typed as RepeatedHere. Anything written
+    # differently — a description, an order, a required entry — is a shape of its own.
+    Repeated:
+      type: object
+      properties:
+        here:
+          type: object
+          properties:
+            city:
+              type: string
+            zip:
+              type: string
+        again:
+          type: object
+          properties:
+            city:
+              type: string
+            zip:
+              type: string
+        described:
+          type: object
+          description: The same two properties, said something about.
+          properties:
+            city:
+              type: string
+            zip:
+              type: string
+        reordered:
+          type: object
+          properties:
+            zip:
+              type: string
+            city:
+              type: string
+        # Enums are not shared: the generator nests a copy in every class.
+        kind:
+          type: string
+          enum: [FIRST, SECOND]
+        elsewhere:
+          $ref: '#/components/schemas/RepeatedElsewhere'
+        # Written the same as the body of postRepeated, which the generator reaches first.
+        fromBody:
+          type: object
+          properties:
+            note:
+              type: string
+
+    RepeatedElsewhere:
+      type: object
+      properties:
+        # The same shape as Repeated.here, in a schema of its own, and so the same class.
+        somewhere:
+          type: object
+          properties:
+            city:
+              type: string
+            zip:
+              type: string
 
     Aliases:
       type: object

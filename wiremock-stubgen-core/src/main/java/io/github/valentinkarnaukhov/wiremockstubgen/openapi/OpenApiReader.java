@@ -91,11 +91,13 @@ public final class OpenApiReader {
                 ? Map.of() : components.getSchemas();
 
         Schemas schemas = new Schemas(declared, warnings, composition);
-        schemas.readDeclared();
 
-        // Read after the declared schemas, and with the same Schemas, because a body
-        // written out in place is a schema too and has to land in the same map.
+        // Bodies written out in place are read first, and into the same Schemas, because
+        // that is the order openapi-generator gives names in: where the same shape is
+        // written out twice, the class is named after whichever the generator reached
+        // first, and it reaches the paths before the components.
         List<Operation> operations = operations(document, components, schemas);
+        schemas.readDeclared();
 
         if (!declared.isEmpty() && schemas.resolved().isEmpty()) {
             warnings.accept("None of the " + declared.size() + " schemas this specification"
