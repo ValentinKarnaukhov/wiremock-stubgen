@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 /** Generates WireMock stub builders from an OpenAPI specification. */
-@Mojo(name = "generate", defaultPhase = LifecyclePhase.GENERATE_TEST_SOURCES, threadSafe = true)
+@Mojo(name = "generate", defaultPhase = LifecyclePhase.GENERATE_SOURCES, threadSafe = true)
 public class GenerateMojo extends AbstractMojo {
 
     /** OpenAPI specification to read. */
@@ -83,15 +83,32 @@ public class GenerateMojo extends AbstractMojo {
     @Parameter
     private Map<String, String> options = Map.of();
 
-    /** Register the output directory as a test source root. */
-    @Parameter(property = "wiremock-stubgen.addTestSourceRoot", defaultValue = "true")
-    private boolean addTestSourceRoot;
+    /**
+     * Compile the stubs for the test classpath only, so they do not reach the artifact.
+     * This is the default because a stub is test scaffolding and drags WireMock in with it.
+     */
+    @Parameter(property = "wiremock-stubgen.addTestCompileSourceRoot", defaultValue = "true")
+    private boolean addTestCompileSourceRoot;
+
+    /**
+     * Compile the stubs into the artifact instead, for a client library that publishes
+     * stubs for its consumers to test against. Cannot be combined with
+     * {@code addTestCompileSourceRoot}.
+     */
+    @Parameter(property = "wiremock-stubgen.addCompileSourceRoot", defaultValue = "false")
+    private boolean addCompileSourceRoot;
 
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     private MavenProject project;
 
     @Override
     public void execute() throws MojoExecutionException {
+        if (addCompileSourceRoot && addTestCompileSourceRoot) {
+            throw new MojoExecutionException("addCompileSourceRoot and addTestCompileSourceRoot"
+                    + " both ask for the same directory and only one can have it."
+                    + " Turn addTestCompileSourceRoot off to publish the stubs in the artifact.");
+        }
+
         LanguageTarget target;
         try {
             target = LanguageTargets.require(language, getClass().getClassLoader());
@@ -130,7 +147,9 @@ public class GenerateMojo extends AbstractMojo {
 
         write(files);
 
-        if (addTestSourceRoot) {
+        if (addCompileSourceRoot) {
+            project.addCompileSourceRoot(outputDirectory.toString());
+        } else if (addTestCompileSourceRoot) {
             project.addTestCompileSourceRoot(outputDirectory.toString());
         }
 

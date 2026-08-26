@@ -67,7 +67,8 @@ class GenerateMojoTest {
         set("maxDepth", 5);
         set("composition", Composition.MERGE);
         set("options", Map.<String, String>of());
-        set("addTestSourceRoot", true);
+        set("addTestCompileSourceRoot", true);
+        set("addCompileSourceRoot", false);
         set("project", project);
     }
 
@@ -81,12 +82,36 @@ class GenerateMojoTest {
 
     @Test
     void leavesTheSourceRootAloneWhenToldTo() throws Exception {
-        set("addTestSourceRoot", false);
+        set("addTestCompileSourceRoot", false);
 
         mojo.execute();
 
         assertThat(files()).isNotEmpty();
         assertThat(project.getTestCompileSourceRoots()).doesNotContain(output.toString());
+    }
+
+    /**
+     * A client library publishing stubs for its consumers needs them in the artifact, not
+     * on its own test classpath -- a downstream module sees the jar and nothing else.
+     */
+    @Test
+    void offersTheStubsToTheArtifactWhenAsked() throws Exception {
+        set("addTestCompileSourceRoot", false);
+        set("addCompileSourceRoot", true);
+
+        mojo.execute();
+
+        assertThat(project.getCompileSourceRoots()).contains(output.toString());
+        assertThat(project.getTestCompileSourceRoots()).doesNotContain(output.toString());
+    }
+
+    @Test
+    void refusesToPutTheSameDirectoryInBothRoots() {
+        set("addCompileSourceRoot", true);
+
+        assertThatThrownBy(mojo::execute)
+                .isInstanceOf(MojoExecutionException.class)
+                .hasMessageContaining("only one can have it");
     }
 
     @Test
