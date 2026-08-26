@@ -1,0 +1,40 @@
+package io.github.valentinkarnaukhov.wiremockstubgen.codegen.java;
+
+import io.github.valentinkarnaukhov.wiremockstubgen.spec.StubApi;
+import io.github.valentinkarnaukhov.wiremockstubgen.target.GeneratedFile;
+import io.github.valentinkarnaukhov.wiremockstubgen.target.LanguageTarget;
+import io.github.valentinkarnaukhov.wiremockstubgen.target.TargetOptions;
+
+import java.util.List;
+import java.util.Objects;
+
+/**
+ * Emits Java WireMock stub builders.
+ *
+ * <p>What is emitted is only the typed surface — a method per parameter, per status code
+ * and per body. Everything those methods do at runtime is inherited from the runtime
+ * library, because anything written into a generated file is a thing a consumer cannot
+ * fix without regenerating.
+ */
+public final class JavaLanguageTarget implements LanguageTarget {
+
+    public static final String ID = "java";
+
+    @Override
+    public String id() {
+        return ID;
+    }
+
+    @Override
+    public String displayName() {
+        return "Java (WireMock)";
+    }
+
+    @Override
+    public List<GeneratedFile> generate(StubApi api, TargetOptions options) {
+        Objects.requireNonNull(api, "api");
+        Objects.requireNonNull(options, "options");
+        StubEmitter emitter = new StubEmitter(api, options);
+        return api.operations().stream().map(emitter::emit).toList();
+    }
+}

@@ -1,5 +1,5 @@
 # Build output. Anchored to the repository root and to module roots on purpose:
-# a bare "target/" would also swallow the source package stubgen/target/, and a
+# a bare "target/" would also swallow the source package wiremockstubgen/target/, and a
 # new class dropped there would be ignored without a word.
 /target/
 /*/target/

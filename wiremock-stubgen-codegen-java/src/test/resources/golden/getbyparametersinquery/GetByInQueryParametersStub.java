@@ -2,8 +2,8 @@ package com.example.stubs.getbyparametersinquery;
 
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.matching.StringValuePattern;
-import io.github.valentinkarnaukhov.stubgen.runtime.AbstractStub;
-import io.github.valentinkarnaukhov.stubgen.runtime.StubTarget;
+import io.github.valentinkarnaukhov.wiremockstubgen.runtime.AbstractStub;
+import io.github.valentinkarnaukhov.wiremockstubgen.runtime.StubTarget;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

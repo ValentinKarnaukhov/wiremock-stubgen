@@ -4,9 +4,9 @@ import com.example.model.CompositeBody;
 import com.example.model.CompositeDeepField;
 import com.example.model.CompositeField;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
-import io.github.valentinkarnaukhov.stubgen.runtime.AbstractResponseBodyBuilder;
-import io.github.valentinkarnaukhov.stubgen.runtime.AbstractStub;
-import io.github.valentinkarnaukhov.stubgen.runtime.StubTarget;
+import io.github.valentinkarnaukhov.wiremockstubgen.runtime.AbstractResponseBodyBuilder;
+import io.github.valentinkarnaukhov.wiremockstubgen.runtime.AbstractStub;
+import io.github.valentinkarnaukhov.wiremockstubgen.runtime.StubTarget;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -2,9 +2,9 @@ package com.example.stubs.postbyrequestbodycomposite;
 
 import com.example.model.CompositeBody;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
-import io.github.valentinkarnaukhov.stubgen.runtime.AbstractRequestBodyMatcher;
-import io.github.valentinkarnaukhov.stubgen.runtime.AbstractStub;
-import io.github.valentinkarnaukhov.stubgen.runtime.StubTarget;
+import io.github.valentinkarnaukhov.wiremockstubgen.runtime.AbstractRequestBodyMatcher;
+import io.github.valentinkarnaukhov.wiremockstubgen.runtime.AbstractStub;
+import io.github.valentinkarnaukhov.wiremockstubgen.runtime.StubTarget;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
