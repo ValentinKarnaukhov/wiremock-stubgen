@@ -55,6 +55,13 @@
             <version>${maven-plugin-tools.version}</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- The specification the mojo is pointed at in tests. -->
+        <dependency>
+            <groupId>io.github.valentinkarnaukhov</groupId>
+            <artifactId>wiremock-stubgen-fixtures</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
