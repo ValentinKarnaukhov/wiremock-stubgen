@@ -35,8 +35,8 @@ import java.util.Set;
  *       without a scope the API would have to guess which element a value belongs to.</li>
  *   <li><b>Depth is counted inside a scope and restarts at every nested list.</b> See
  *       {@link BodyScope}.</li>
- *   <li><b>Names that would land on a runtime method are escaped</b>, and collisions
- *       between two routes that flatten to one name are fatal. See {@link Names} and
+ *   <li><b>Names are the target's to spell</b>, and collisions between two routes that
+ *       flatten to one name are fatal. See {@link FlatteningOptions#accessorName()} and
  *       {@link FlatteningException}.</li>
  * </ol>
  *
@@ -132,7 +132,7 @@ public final class Flattener {
                 // Recorded before descending, so the list reads in the order a builder has
                 // to create them: an object always precedes what it contains.
                 intermediates.add(new Intermediate(
-                        Names.escape(Names.join(path), options.reservedNames()), path, nested.get().name(),
+                        options.accessorName().apply(path), path, nested.get().name(),
                         property.readOnly()));
                 collect(nested.get(), path, byName, intermediates, scopeName);
                 continue;
@@ -151,7 +151,7 @@ public final class Flattener {
     }
 
     private Accessor leafOrTransition(List<String> path, TypeRef type, boolean readOnly) {
-        String name = Names.escape(Names.join(path), options.reservedNames());
+        String name = options.accessorName().apply(path);
         if (type.kind() == TypeRef.Kind.ARRAY && type.items() != null) {
             TypeRef element = type.items();
             Optional<ObjectSchema> described = describedObject(element);

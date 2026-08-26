@@ -47,13 +47,12 @@ final class StubEmitter {
 
     /**
      * Names a generated scope may not use, because something it inherits already declares
-     * them.
+     * them. Java method names, so this belongs to the language target and not the core.
      *
-     * <p>Java method names, so this belongs to the language target and not the core. It is
-     * the union across both sides, and ignores arity, so that one schema does not read
-     * differently depending on which end of the operation it was met at.
+     * <p>It is the union across both sides, so that one schema does not read differently
+     * depending on which end of the operation it was met at.
      */
-    private static final Set<String> RESERVED = Set.of(
+    static final Set<String> RESERVED = Set.of(
             // AbstractBodyScope
             "exit", "mock", "buildStub", "root",
             // AbstractRequestBodyMatcher
@@ -79,7 +78,8 @@ final class StubEmitter {
         this.options = options;
         this.types = new JavaTypes(options);
         this.templates = Templates.from(options);
-        this.flattener = new Flattener(api, new FlatteningOptions(options.maxDepth(), RESERVED));
+        this.flattener = new Flattener(api, new FlatteningOptions(
+                options.maxDepth(), new JavaAccessorNames(RESERVED)));
     }
 
     GeneratedFile emit(Operation operation) {

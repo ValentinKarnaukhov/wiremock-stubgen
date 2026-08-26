@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -131,43 +130,6 @@ class FlattenerTest {
         assertThat(flattener.flatten(TypeRef.object("NoSuchSchema"), BodySide.RESPONSE)).isEmpty();
     }
 
-    // ── F8: names that would land on a method the scope inherits ──────────────
-
-    @Test
-    void movesAccessorsOutOfTheWayOfTheRuntimesOwnMethods() {
-        BodyScope root = flatten(TypeRef.object("ReservedNamesBody"), BodySide.RESPONSE, javaOptions()).root();
-
-        assertThat(names(root)).containsExactly(
-                "_exit", "_mock", "_addNew", "safeExit", "safeInnerField", "xDashedProperty");
-    }
-
-    @Test
-    void escapesReservedNamesWhateverTheirArity() {
-        BodyScope root = flatten(TypeRef.object("ReservedNamesBody"), BodySide.RESPONSE, javaOptions()).root();
-
-        assertThat(accessor(root, "_exit").kind())
-                .describedAs("one argument: a legal overload, but renamed anyway so the same "
-                        + "property never reads two ways")
-                .isEqualTo(Accessor.Kind.VALUE);
-        assertThat(accessor(root, "_addNew").kind())
-                .describedAs("zero arguments: an identical signature, and a compile error if left alone")
-                .isEqualTo(Accessor.Kind.NESTED_LIST);
-    }
-
-    @Test
-    void leavesNamesAloneOnceFlatteningHasPrefixedThem() {
-        BodyScope root = flatten(TypeRef.object("ReservedNamesBody"), BodySide.RESPONSE, javaOptions()).root();
-
-        assertThat(accessor(root, "safeExit").path()).containsExactly("safe", "exit");
-    }
-
-    @Test
-    void turnsWireNamesThatAreNotIdentifiersIntoOnes() {
-        BodyScope root = flatten(TypeRef.object("ReservedNamesBody"), BodySide.RESPONSE, javaOptions()).root();
-
-        assertThat(accessor(root, "xDashedProperty").path()).containsExactly("x-dashed-property");
-    }
-
     // ── depth, and the cycles it makes harmless ───────────────────────────────
 
     @Test
@@ -216,26 +178,10 @@ class FlattenerTest {
                 .hasMessageContaining("compositeInner.field");
     }
 
-    @Test
-    void reportsACollisionCausedByEscapingTheSameWayAsAnyOther() {
-        StubApi colliding = apiOf(
-                schema("Root", property("exit", string()), property("_exit", string())));
-
-        assertThatThrownBy(() -> new Flattener(colliding, javaOptions())
-                .flatten(TypeRef.object("Root"), BodySide.REQUEST))
-                .isInstanceOf(FlatteningException.class)
-                .hasMessageContaining("'_exit'");
-    }
-
     // ── helpers ───────────────────────────────────────────────────────────────
 
     private static TypeRef compositeBodyList() {
         return TypeRef.array(TypeRef.object("CompositeBody"));
-    }
-
-    private static FlatteningOptions javaOptions() {
-        return FlatteningOptions.defaults()
-                .withReservedNames(Set.of("exit", "mock", "root", "buildStub", "addNew", "path", "match"));
     }
 
     private static FlatteningOptions depth(int maxDepth) {

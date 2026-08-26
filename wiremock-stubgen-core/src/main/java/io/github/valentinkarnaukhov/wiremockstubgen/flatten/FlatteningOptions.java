@@ -1,15 +1,22 @@
 package io.github.valentinkarnaukhov.wiremockstubgen.flatten;
 
+import io.github.valentinkarnaukhov.wiremockstubgen.naming.Identifiers;
+
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
+import java.util.function.Function;
 
 /**
  * What the flattener is allowed to do.
  *
- * @param maxDepth      how many property hops a single scope may flatten through
- * @param reservedNames accessor names the target language cannot accept on a body scope
+ * @param maxDepth     how many property hops a single scope may flatten through
+ * @param accessorName what to call the accessor reached by a route through the schema.
+ *                     Spelling a name is the target language's business — where Java
+ *                     camel-joins and steps around the methods its scopes inherit,
+ *                     another language will want something else — so the target supplies
+ *                     this rather than the flattener choosing.
  */
-public record FlatteningOptions(int maxDepth, Set<String> reservedNames) {
+public record FlatteningOptions(int maxDepth, Function<List<String>, String> accessorName) {
 
     /**
      * Deep enough that real specifications do not reach it, shallow enough to stop a
@@ -22,18 +29,19 @@ public record FlatteningOptions(int maxDepth, Set<String> reservedNames) {
         if (maxDepth < 1) {
             throw new IllegalArgumentException("maxDepth must be at least 1, got " + maxDepth);
         }
-        reservedNames = Set.copyOf(Objects.requireNonNull(reservedNames, "reservedNames"));
+        Objects.requireNonNull(accessorName, "accessorName");
     }
 
+    /** Camel-joined names, which is what a target has to say otherwise. */
     public static FlatteningOptions defaults() {
-        return new FlatteningOptions(DEFAULT_MAX_DEPTH, Set.of());
+        return new FlatteningOptions(DEFAULT_MAX_DEPTH, Identifiers::camelJoin);
     }
 
-    public FlatteningOptions withReservedNames(Set<String> names) {
-        return new FlatteningOptions(maxDepth, names);
+    public FlatteningOptions withAccessorName(Function<List<String>, String> naming) {
+        return new FlatteningOptions(maxDepth, naming);
     }
 
     public FlatteningOptions withMaxDepth(int depth) {
-        return new FlatteningOptions(depth, reservedNames);
+        return new FlatteningOptions(depth, accessorName);
     }
 }
