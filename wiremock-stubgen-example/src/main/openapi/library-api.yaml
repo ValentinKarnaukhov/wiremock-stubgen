@@ -31,6 +31,12 @@ paths:
           required: true
           schema:
             type: string
+        # Neither query nor header. WireMock matches cookies through a call of its
+        # own, so a cookie parameter is not a header parameter under another name.
+        - name: session
+          in: cookie
+          schema:
+            type: string
       responses:
         200:
           description: The book.
@@ -185,6 +191,28 @@ components:
         addedAt:
           type: string
           readOnly: true
+        # Formats the model generator turns into types of their own rather than
+        # String, so an accessor for one has to name UUID and LocalDate.
+        isbn:
+          type: string
+          format: uuid
+        publishedOn:
+          type: string
+          format: date
+        # No properties, only a rule about the ones that turn up. The model
+        # generator writes a Map, which has no setters to reach into.
+        ratings:
+          type: object
+          additionalProperties:
+            type: integer
+        # A list inside a list. There is no position to open, so the whole thing
+        # is set at once.
+        chapters:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
 
     Author:
       type: object

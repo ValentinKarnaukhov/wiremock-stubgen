@@ -21,6 +21,10 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -378,12 +382,62 @@ class LibraryStubsTest {
         assertThat(event.at("/borrower/name").asText()).isEqualTo("Ada");
     }
 
+    /**
+     * A cookie is not a header under another name: WireMock matches it through a call of
+     * its own, and a stub that put it among the headers would match nothing.
+     */
+    @Test
+    void answersOnlyRequestsCarryingTheCookie() throws Exception {
+        new GetBookStub(target)
+                .pathBookId("978-0201616224")
+                .cookieSession("abc")
+                .code200()
+                    .title("The Pragmatic Programmer")
+                .mock();
+
+        HttpResponse<String> withCookie = get("/books/978-0201616224", "session=abc");
+        assertThat(withCookie.statusCode()).isEqualTo(200);
+
+        assertThat(get("/books/978-0201616224").statusCode())
+                .as("no cookie, no match").isEqualTo(404);
+        assertThat(get("/books/978-0201616224", "session=other").statusCode())
+                .as("the wrong cookie is no better than none").isEqualTo(404);
+    }
+
+    /**
+     * Values that are not strings. Two formats the model generator gives types of their
+     * own, a schema whose only rule is about the properties that turn up, and a list whose
+     * elements are themselves lists — which has no position to open, so it is set whole.
+     */
+    @Test
+    void servesFormattedMappedAndDoublyNestedValues() throws Exception {
+        new GetBookStub(target)
+                .pathBookId("978-0201616224")
+                .code200()
+                    .isbn(UUID.fromString("11111111-2222-3333-4444-555555555555"))
+                    .publishedOn(LocalDate.of(1999, 10, 20))
+                    .ratings(Map.of("clarity", 5))
+                    .chapters(List.of(List.of("Preface"), List.of("Tools", "Debugging")))
+                .mock();
+
+        JsonNode book = json(get("/books/978-0201616224"));
+        assertThat(book.at("/isbn").asText()).isEqualTo("11111111-2222-3333-4444-555555555555");
+        assertThat(book.at("/publishedOn").asText()).isEqualTo("1999-10-20");
+        assertThat(book.at("/ratings/clarity").asInt()).isEqualTo(5);
+        assertThat(book.at("/chapters/1/1").asText()).isEqualTo("Debugging");
+    }
+
     private static JsonNode json(HttpResponse<String> response) throws IOException {
         return JSON.readTree(response.body());
     }
 
     private HttpResponse<String> get(String path) throws IOException, InterruptedException {
         return http.send(HttpRequest.newBuilder(uri(path)).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> get(String path, String cookie) throws IOException, InterruptedException {
+        return http.send(HttpRequest.newBuilder(uri(path)).header("Cookie", cookie).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
     }
 
