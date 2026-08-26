@@ -5,6 +5,7 @@ import com.example.library.stubs.books.GetBookStub;
 import com.example.library.stubs.books.SearchBooksStub;
 import com.example.library.stubs.loans.BorrowBookStub;
 import com.example.library.stubs.loans.ListEventsStub;
+import com.example.library.stubs.loans.ListNotificationsStub;
 import com.example.library.stubs.loans.ReturnLoanStub;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -425,6 +426,40 @@ class LibraryStubsTest {
         assertThat(book.at("/publishedOn").asText()).isEqualTo("1999-10-20");
         assertThat(book.at("/ratings/clarity").asInt()).isEqualTo(5);
         assertThat(book.at("/chapters/1/1").asText()).isEqualTo("Debugging");
+    }
+
+    /**
+     * The same {@code oneOf} under both readings, which is the whole point of having two.
+     *
+     * <p>Merging folds both alternatives into one class, so the stub offers accessors over
+     * every member's properties. Reading it as opaque goes with
+     * {@code useOneOfInterfaces=true}, where the model is an empty interface with nothing
+     * to set, and the only thing a stub can do is take the body whole.
+     */
+    @Test
+    void servesAOneOfBothWaysRound() throws Exception {
+        new ListNotificationsStub(target)
+                .code200()
+                    .address("reader@example.com")
+                    .subject("Your book is due")
+                .mock();
+
+        JsonNode merged = json(get("/notifications"));
+        assertThat(merged.at("/address").asText()).isEqualTo("reader@example.com");
+        assertThat(merged.at("/subject").asText()).isEqualTo("Your book is due");
+
+        wireMock.resetAll();
+
+        com.example.library.opaque.model.EmailNotification whole =
+                new com.example.library.opaque.model.EmailNotification()
+                        .address("reader@example.com")
+                        .subject("Your book is due");
+        new com.example.library.opaque.stubs.loans.ListNotificationsStub(target)
+                .code200(whole)
+                .mock();
+
+        JsonNode opaque = json(get("/notifications"));
+        assertThat(opaque.at("/address").asText()).isEqualTo("reader@example.com");
     }
 
     private static JsonNode json(HttpResponse<String> response) throws IOException {

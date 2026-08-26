@@ -147,6 +147,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/LoanEvent'
 
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [ loans ]
+      summary: How a borrower was told about something.
+      responses:
+        200:
+          description: A oneOf naming two alternatives, which the two readings disagree about.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+
 components:
 
   responses:
@@ -316,6 +329,29 @@ components:
           type: string
         borrower:
           $ref: '#/components/schemas/Borrower'
+
+    # Two alternatives, not one. Under the merging reading the model generator
+    # writes a single class holding both members' properties and the stub reaches
+    # into it; under useOneOfInterfaces it writes an empty interface instead,
+    # which has nothing to set, and the opaque reading takes the body whole.
+    Notification:
+      oneOf:
+        - $ref: '#/components/schemas/EmailNotification'
+        - $ref: '#/components/schemas/SmsNotification'
+
+    EmailNotification:
+      type: object
+      properties:
+        address:
+          type: string
+        subject:
+          type: string
+
+    SmsNotification:
+      type: object
+      properties:
+        number:
+          type: string
 
     Problem:
       type: object

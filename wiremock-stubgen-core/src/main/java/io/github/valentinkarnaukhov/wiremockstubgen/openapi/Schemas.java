@@ -95,6 +95,10 @@ final class Schemas {
         if (schema.getAdditionalProperties() instanceof Schema<?> values) {
             return TypeRef.map(typeOf(values, objectName, enumName));
         }
+        String alias = alternativeAlias(schema);
+        if (alias != null) {
+            return referenced(alias, new LinkedHashSet<>());
+        }
         if (schema.getProperties() != null || schema.getAllOf() != null || merging(schema)) {
             // An allOf wrapping one reference and adding nothing of its own is not a type,
             // it is that reference: specifications write it to hang a description or a
@@ -104,10 +108,6 @@ final class Schemas {
             if (schema.getProperties() == null && members != null && members.size() == 1
                     && members.get(0).get$ref() != null) {
                 return referenced(members.get(0).get$ref(), new LinkedHashSet<>());
-            }
-            String alias = alternativeAlias(schema);
-            if (alias != null) {
-                return referenced(alias, new LinkedHashSet<>());
             }
             return inline(schema, objectName);
         }
@@ -201,10 +201,15 @@ final class Schemas {
      * resolves it to the member. Reading it as the member is the only reading that compiles
      * under both, since 7.9.0 emits the member class as well.
      *
+     * <p>True of both readings. Under {@code useOneOfInterfaces=true}, which is what the
+     * opaque reading exists for, the generator writes no interface for a composition
+     * naming a single alternative either, so the composition's own name refers to nothing.
+     *
      * @return null if this is not such a composition
      */
     private String alternativeAlias(Schema<?> schema) {
-        if (!merging(schema) || schema.getProperties() != null || schema.getAllOf() != null) {
+        boolean composed = schema.getOneOf() != null || schema.getAnyOf() != null;
+        if (!composed || schema.getProperties() != null || schema.getAllOf() != null) {
             return null;
         }
         List<Schema> members = alternatives(schema);
@@ -325,6 +330,10 @@ final class Schemas {
         }
         if (composition == Composition.OPAQUE
                 && (schema.getOneOf() != null || schema.getAnyOf() != null)) {
+            if (alternativeAlias(schema) != null) {
+                // One alternative is not opaque: it is that alternative.
+                return;
+            }
             warnings.accept("Schema " + name + " is composed with oneOf or anyOf, which is"
                     + " being read as opaque; stubs will take bodies of this type whole and"
                     + " offer no accessors into them");

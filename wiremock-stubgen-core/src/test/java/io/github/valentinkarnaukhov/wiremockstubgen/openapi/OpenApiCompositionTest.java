@@ -290,6 +290,28 @@ class OpenApiCompositionTest {
         assertThat(opaque.schemas()).containsKey("Composed");
     }
 
+    @Test
+    void stillReadsASingleAlternativeAsThatAlternativeWhenTheRestIsOpaque() {
+        // Under useOneOfInterfaces the generator writes no interface for a composition
+        // naming one alternative either, so the composition's own name refers to nothing.
+        // Being opaque is about there being a choice to make, and here there is none.
+        List<String> opaqueWarnings = new ArrayList<>();
+        StubApi opaque = new OpenApiReader(opaqueWarnings::add, Composition.OPAQUE)
+                .read(Fixtures.compositionApi());
+
+        TypeRef body = opaque.operations().stream()
+                .filter(candidate -> candidate.operationId().equals("getAlternatives"))
+                .findFirst().orElseThrow()
+                .responses().stream()
+                .filter(response -> Integer.valueOf(200).equals(response.statusCode()))
+                .findFirst().orElseThrow()
+                .body();
+
+        assertThat(body.schemaName()).isEqualTo("ChangeEvent");
+        assertThat(opaqueWarnings).noneSatisfy(warning ->
+                assertThat(warning).contains("BaseEvent"));
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     private static List<String> properties(String schema) {

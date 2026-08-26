@@ -38,6 +38,7 @@
 
         <spec>${project.basedir}/src/main/openapi/library-api.yaml</spec>
         <model.package>com.example.library.model</model.package>
+        <opaque.model.package>com.example.library.opaque.model</opaque.model.package>
     </properties>
 
     <dependencies>
@@ -115,6 +116,38 @@
                             </configOptions>
                         </configuration>
                     </execution>
+                    <!--
+                        The same specification read the other way. useOneOfInterfaces makes
+                        the generator write an empty interface for a oneOf instead of a
+                        class, which is what the OPAQUE reading below exists for.
+                    -->
+                    <execution>
+                        <id>models-opaque</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${spec}</inputSpec>
+                            <generatorName>java</generatorName>
+                            <library>resttemplate</library>
+                            <modelPackage>${opaque.model.package}</modelPackage>
+                            <generateApis>false</generateApis>
+                            <generateApiTests>false</generateApiTests>
+                            <generateApiDocumentation>false</generateApiDocumentation>
+                            <generateModelTests>false</generateModelTests>
+                            <generateModelDocumentation>false</generateModelDocumentation>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <!-- The oneOf interface is a supporting file, and it is the
+                                 only supporting file this run needs. -->
+                            <supportingFilesToGenerate>Notification.java</supportingFilesToGenerate>
+                            <configOptions>
+                                <useJakartaEe>true</useJakartaEe>
+                                <openApiNullable>false</openApiNullable>
+                                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+                                <useOneOfInterfaces>true</useOneOfInterfaces>
+                            </configOptions>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
 
@@ -136,6 +169,22 @@
                             <inputSpec>${spec}</inputSpec>
                             <packageName>com.example.library.stubs</packageName>
                             <modelPackage>${model.package}</modelPackage>
+                        </configuration>
+                    </execution>
+                    <!--
+                        A oneOf read as opaque, against the interfaces above. There are no
+                        setters on an interface, so the stub must take such a body whole.
+                    -->
+                    <execution>
+                        <id>stubs-opaque</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${spec}</inputSpec>
+                            <packageName>com.example.library.opaque.stubs</packageName>
+                            <modelPackage>${opaque.model.package}</modelPackage>
+                            <composition>OPAQUE</composition>
                         </configuration>
                     </execution>
                 </executions>
