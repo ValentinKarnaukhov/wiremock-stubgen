@@ -39,9 +39,12 @@ class OpenApiCompositionTest {
     }
 
     @Test
-    void readsTheWholeDocumentWithoutComplaining() {
-        assertThat(api.operations()).hasSize(5);
-        assertThat(warnings).isEmpty();
+    void readsTheWholeDocumentComplainingOnlyWhereItShould() {
+        assertThat(api.operations()).hasSize(6);
+        // The one thing here that genuinely describes no shape is the anyOf of scalars,
+        // and saying so out loud is the designed behaviour rather than a shortcoming.
+        assertThat(warnings).singleElement().asString()
+                .contains("Any", "resolved to no properties at all");
     }
 
     // ── allOf ─────────────────────────────────────────────────────────────────
@@ -179,6 +182,57 @@ class OpenApiCompositionTest {
         Property frozen = property("ReadOnlyHolder", "frozenObject");
         assertThat(frozen.readOnly()).isTrue();
         assertThat(frozen.type().schemaName()).isEqualTo("Identified");
+    }
+
+    // ── oneOf and anyOf ───────────────────────────────────────────────────────
+
+    @Test
+    void readsAOneOfOfASingleMemberAsThatMember() {
+        // The two generator versions disagree here: 7.9.0 writes a flattened class of its
+        // own, 7.24.0 writes none and resolves it to the member. Reading it as the member
+        // is the only reading that compiles under both, because 7.9.0 emits the member
+        // class as well while the flattened name exists in 7.9.0 alone.
+        assertThat(api.schemas()).doesNotContainKey("BaseEvent");
+        assertThat(response("getAlternatives", 200).schemaName()).isEqualTo("ChangeEvent");
+    }
+
+    @Test
+    void keepsTheLastMemberWhereAlternativesDisagree() {
+        // Two members, which both versions do flatten into one class. payload is a string
+        // in one and an integer in the other, and the generator resolves that silently in
+        // favour of the last member, so this has to as well: agreeing with it matters more
+        // than being right.
+        assertThat(properties("EitherEvent"))
+                .containsExactly("eventType", "payload", "extra");
+        assertThat(property("EitherEvent", "payload").type().openApiType())
+                .isEqualTo("integer");
+    }
+
+    @Test
+    void takesACompositionOfScalarsWhole() {
+        // Nothing to accessor here, and no special case needed to say so: folding the
+        // members finds no properties at all. The generator agrees, writing the class
+        // with no fields.
+        assertThat(api.schemas()).doesNotContainKey("Any");
+        assertThat(warnings).anySatisfy(warning -> assertThat(warning)
+                .contains("Any", "resolved to no properties at all"));
+    }
+
+    @Test
+    void takesEveryCompositionWholeWhenToldTheyAreOpaque() {
+        // Required with useOneOfInterfaces=true, under which the generator writes an empty
+        // interface: there would be no setters for merged accessors to call. The flag
+        // belongs to the other tool and this one cannot see it, so it has to be told.
+        List<String> opaqueWarnings = new ArrayList<>();
+        StubApi opaque = new OpenApiReader(opaqueWarnings::add, Composition.OPAQUE)
+                .read(Fixtures.compositionApi());
+
+        assertThat(opaque.schemas()).doesNotContainKey("BaseEvent");
+        assertThat(opaque.schemas()).doesNotContainKey("EitherEvent");
+        assertThat(opaqueWarnings).anySatisfy(warning -> assertThat(warning)
+                .contains("EitherEvent", "read as opaque"));
+        // The allOf next door is untouched by the choice.
+        assertThat(opaque.schemas()).containsKey("Composed");
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

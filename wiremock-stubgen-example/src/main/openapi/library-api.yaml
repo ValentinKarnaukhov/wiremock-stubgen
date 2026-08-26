@@ -126,6 +126,19 @@ paths:
         404:
           $ref: '#/components/responses/NotFound'
 
+  /events:
+    get:
+      operationId: listEvents
+      tags: [ loans ]
+      summary: What has happened to a loan.
+      responses:
+        200:
+          description: A oneOf, which the model generator flattens into one class.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoanEvent'
+
 components:
 
   responses:
@@ -228,6 +241,25 @@ components:
           type: string
         href:
           type: string
+
+    # A oneOf with a discriminator. Nothing here has "no single shape": the model
+    # generator writes an ordinary class holding the member's properties, so the stub
+    # offers accessors into it exactly as it would for an allOf.
+    LoanEvent:
+      oneOf:
+        - $ref: '#/components/schemas/LoanReturnedEvent'
+      discriminator:
+        propertyName: eventType
+
+    LoanReturnedEvent:
+      type: object
+      properties:
+        eventType:
+          type: string
+        loanId:
+          type: string
+        borrower:
+          $ref: '#/components/schemas/Borrower'
 
     Problem:
       type: object

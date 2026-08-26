@@ -1,5 +1,6 @@
 package io.github.valentinkarnaukhov.stubgen.maven;
 
+import io.github.valentinkarnaukhov.stubgen.openapi.Composition;
 import io.github.valentinkarnaukhov.stubgen.openapi.OpenApiReader;
 import io.github.valentinkarnaukhov.stubgen.spec.StubApi;
 import io.github.valentinkarnaukhov.stubgen.target.GeneratedFile;
@@ -69,6 +70,15 @@ public class GenerateMojo extends AbstractMojo {
     @Parameter(property = "stubgen.maxDepth", defaultValue = "5")
     private int maxDepth;
 
+    /**
+     * What to make of a schema written with {@code oneOf} or {@code anyOf}. Set this to
+     * {@code OPAQUE} if openapi-generator is being run with
+     * {@code useOneOfInterfaces=true}, under which such a schema becomes an empty
+     * interface with no setters to call.
+     */
+    @Parameter(property = "stubgen.composition", defaultValue = "MERGE")
+    private Composition composition;
+
     /** Target-specific settings, passed through untouched. */
     @Parameter
     private Map<String, String> options = Map.of();
@@ -101,7 +111,7 @@ public class GenerateMojo extends AbstractMojo {
 
         StubApi api;
         try {
-            api = new OpenApiReader(getLog()::warn).read(inputSpec);
+            api = new OpenApiReader(getLog()::warn, composition).read(inputSpec);
         } catch (IllegalArgumentException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }

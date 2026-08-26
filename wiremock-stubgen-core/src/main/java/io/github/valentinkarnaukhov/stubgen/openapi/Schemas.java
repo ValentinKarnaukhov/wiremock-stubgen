@@ -48,9 +48,12 @@ final class Schemas {
 
     private final Consumer<String> warnings;
 
-    Schemas(Map<String, Schema> declared, Consumer<String> warnings) {
+    private final Composition composition;
+
+    Schemas(Map<String, Schema> declared, Consumer<String> warnings, Composition composition) {
         this.declared = Objects.requireNonNull(declared, "declared");
         this.warnings = Objects.requireNonNull(warnings, "warnings");
+        this.composition = Objects.requireNonNull(composition, "composition");
     }
 
     /**
@@ -100,7 +103,7 @@ final class Schemas {
         if (schema.getAdditionalProperties() instanceof Schema<?> values) {
             return TypeRef.map(typeOf(values, objectName, enumName));
         }
-        if (schema.getProperties() != null || schema.getAllOf() != null) {
+        if (schema.getProperties() != null || schema.getAllOf() != null || merging(schema)) {
             // An allOf wrapping one reference and adding nothing of its own is not a type,
             // it is that reference. Specifications write it constantly, to hang a
             // description or a readOnly flag on a $ref, which JSON Schema does not otherwise
@@ -112,6 +115,10 @@ final class Schemas {
                     && members.get(0).get$ref() != null) {
                 return referenced(members.get(0).get$ref(), new LinkedHashSet<>());
             }
+            String alias = alternativeAlias(schema);
+            if (alias != null) {
+                return referenced(alias, new LinkedHashSet<>());
+            }
             return inline(schema, objectName);
         }
         if (schema.getEnum() != null && enumName != null) {
@@ -120,9 +127,10 @@ final class Schemas {
                     enumName.substring(0, separator), enumName.substring(separator + 1));
         }
         if (schema.getOneOf() != null || schema.getAnyOf() != null) {
+            // Only reachable under OPAQUE; merging sends these to inline() above.
             warnings.accept(describe(objectName) + " is composed with oneOf or anyOf, which"
-                    + " has no single shape; the stub will take the body whole and offer no"
-                    + " accessors into it");
+                    + " is being read as opaque; the stub will take the body whole and offer"
+                    + " no accessors into it");
             return TypeRef.unknown();
         }
         if (schema.getType() == null || "object".equals(schema.getType())) {
@@ -163,6 +171,14 @@ final class Schemas {
         if (target.getEnum() != null) {
             return TypeRef.enumeration(name);
         }
+        String alias = alternativeAlias(target);
+        if (alias != null) {
+            if (!visiting.add(name)) {
+                warnings.accept("Schema " + name + " is an alias for itself; ignoring it");
+                return TypeRef.unknown();
+            }
+            return referenced(alias, visiting);
+        }
         if (hasShapeOfItsOwn(target)) {
             return TypeRef.object(name);
         }
@@ -181,6 +197,38 @@ final class Schemas {
                 || schema.getAllOf() != null
                 || schema.getOneOf() != null
                 || schema.getAnyOf() != null;
+    }
+
+    /**
+     * Whether this schema's {@code oneOf} or {@code anyOf} members are to be folded in.
+     */
+    private boolean merging(Schema<?> schema) {
+        return composition == Composition.MERGE
+                && (schema.getOneOf() != null || schema.getAnyOf() != null);
+    }
+
+    /**
+     * The reference a {@code oneOf} or {@code anyOf} of exactly one member stands for.
+     *
+     * <p>Such a composition names one alternative and so has that alternative's shape.
+     * Specifications write it to hang a discriminator on a hierarchy that currently has a
+     * single subtype, and it was two of the three occurrences of the keyword across 43 real
+     * documents.
+     *
+     * <p>The two generator versions disagree about it: 7.9.0 writes a flattened class of
+     * its own, 7.24.0 writes none and resolves it to the member — the same treatment
+     * {@code allOf} of a single reference has always had. Reading it as the member is what
+     * breaks the tie, because it is the only reading that compiles under both: 7.9.0 emits
+     * the member class as well, while the flattened name exists in 7.9.0 alone.
+     *
+     * @return null if this is not such a composition
+     */
+    private String alternativeAlias(Schema<?> schema) {
+        if (!merging(schema) || schema.getProperties() != null || schema.getAllOf() != null) {
+            return null;
+        }
+        List<Schema> members = alternatives(schema);
+        return members.size() == 1 ? members.get(0).get$ref() : null;
     }
 
     static String referencedName(String ref) {
@@ -220,6 +268,11 @@ final class Schemas {
 
     private void register(String name, Schema<?> schema) {
         if (resolved.containsKey(name)) {
+            return;
+        }
+        if (alternativeAlias(schema) != null) {
+            // Nothing to register: the generator writes no class for it, and one declared
+            // here would be a name the stub could refer to and nothing could satisfy.
             return;
         }
         Merged merged = merge(schema, new LinkedHashSet<>());
@@ -277,13 +330,14 @@ final class Schemas {
         if (schema.getEnum() != null) {
             return;
         }
-        if (schema.getOneOf() != null || schema.getAnyOf() != null) {
-            warnings.accept("Schema " + name + " is composed with oneOf or anyOf, which has"
-                    + " no single shape; stubs will take bodies of this type whole and offer"
-                    + " no accessors into them");
+        if (composition == Composition.OPAQUE
+                && (schema.getOneOf() != null || schema.getAnyOf() != null)) {
+            warnings.accept("Schema " + name + " is composed with oneOf or anyOf, which is"
+                    + " being read as opaque; stubs will take bodies of this type whole and"
+                    + " offer no accessors into them");
             return;
         }
-        if (schema.getProperties() != null || schema.getAllOf() != null) {
+        if (hasShapeOfItsOwn(schema)) {
             warnings.accept("Schema " + name + " resolved to no properties at all;"
                     + " stubs will take bodies of this type whole");
         }
@@ -295,9 +349,14 @@ final class Schemas {
      * <p>{@code allOf} members are merged in the order they are written, and a member may
      * be a composition itself. A property declared twice keeps the position of its first
      * declaration and the definition of its last, which is what merging two schemas that
-     * agree about a field has to mean.
+     * agree about a field has to mean — and, where they disagree, is also what
+     * openapi-generator settles on.
      *
-     * @param visiting guards {@code allOf} cycles. Unlike {@link #typeOf}, which stops at
+     * <p>{@code oneOf} and {@code anyOf} members are folded in the same way when
+     * {@link Composition#MERGE} is in force, after the {@code allOf} members and before the
+     * schema's own properties.
+     *
+     * @param visiting guards composition cycles. Unlike {@link #typeOf}, which stops at
      *                 a name, this one follows references, so a specification composing
      *                 two schemas out of each other would otherwise not terminate.
      */
@@ -305,6 +364,11 @@ final class Schemas {
         Merged merged = new Merged();
         if (schema.getAllOf() != null) {
             for (Schema<?> member : schema.getAllOf()) {
+                merged.addAll(memberOf(member, visiting));
+            }
+        }
+        if (merging(schema)) {
+            for (Schema<?> member : alternatives(schema)) {
                 merged.addAll(memberOf(member, visiting));
             }
         }
@@ -318,8 +382,24 @@ final class Schemas {
         return merged;
     }
 
-    private Merged memberOf(Schema<?> member, Set<String> visiting) {
-        if (member.get$ref() == null) {
+    /**
+     * The members of a {@code oneOf} or {@code anyOf}, in the order they are written.
+     *
+     * <p>A schema may legally write both, and folding both is the only reading that does
+     * not silently drop half of what was said.
+     */
+    private List<Schema> alternatives(Schema<?> schema) {
+        List<Schema> members = new ArrayList<>();
+        if (schema.getOneOf() != null) {
+            members.addAll(schema.getOneOf());
+        }
+        if (schema.getAnyOf() != null) {
+            members.addAll(schema.getAnyOf());
+        }
+        return members;
+    }
+
+    private Merged memberOf(Schema<?> member, Set<String> visiting) {        if (member.get$ref() == null) {
             return merge(member, visiting);
         }
         String name = referencedName(member.get$ref());
@@ -329,8 +409,8 @@ final class Schemas {
             return new Merged();
         }
         if (!visiting.add(name)) {
-            warnings.accept("Schema " + name + " takes part in a cycle of allOf members;"
-                    + " stopping there");
+            warnings.accept("Schema " + name + " takes part in a cycle of composition"
+                    + " members; stopping there");
             return new Merged();
         }
         Merged merged = merge(declared.get(name), visiting);

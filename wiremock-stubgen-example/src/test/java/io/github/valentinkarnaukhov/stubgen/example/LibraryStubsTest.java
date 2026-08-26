@@ -4,6 +4,7 @@ import com.example.library.model.Book;
 import com.example.library.stubs.books.GetBookStub;
 import com.example.library.stubs.books.SearchBooksStub;
 import com.example.library.stubs.loans.BorrowBookStub;
+import com.example.library.stubs.loans.ListEventsStub;
 import com.example.library.stubs.loans.ReturnLoanStub;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -275,6 +276,29 @@ class LibraryStubsTest {
                 .mock();
 
         assertThat(json(delete("/loans/gone")).at("/code").asText()).isEqualTo("NOT_FOUND");
+    }
+
+    /**
+     * A body a specification describes with {@code oneOf}.
+     *
+     * <p>Worth serving live rather than merely compiling, because the two generator
+     * versions disagree about what such a schema is called. A composition naming one
+     * alternative has that alternative's shape, and reading it as the member is the only
+     * reading that compiles under both — which is why the accessors below are the member's,
+     * and why they flatten on through the reference to a borrower.
+     */
+    @Test
+    void servesABodyDescribedAsOneOfASingleAlternative() throws Exception {
+        new ListEventsStub(target)
+                .code200()
+                    .eventType("LOAN_RETURNED")
+                    .loanId("loan-1")
+                    .borrowerName("Ada")
+                .mock();
+
+        JsonNode event = json(get("/events"));
+        assertThat(event.at("/eventType").asText()).isEqualTo("LOAN_RETURNED");
+        assertThat(event.at("/borrower/name").asText()).isEqualTo("Ada");
     }
 
     private static JsonNode json(HttpResponse<String> response) throws IOException {

@@ -46,6 +46,8 @@ public final class OpenApiReader {
 
     private final Consumer<String> warnings;
 
+    private final Composition composition;
+
     /**
      * @param warnings where to report everything the reader had to decide for itself —
      *                 a missing operationId, a missing tag, a media type it ignored.
@@ -53,7 +55,17 @@ public final class OpenApiReader {
      *                 exactly the ones a user needs to see to fix their specification.
      */
     public OpenApiReader(Consumer<String> warnings) {
+        this(warnings, Composition.MERGE);
+    }
+
+    /**
+     * @param composition what to make of {@code oneOf} and {@code anyOf}. Defaults to
+     *                    {@link Composition#MERGE} elsewhere because that is what
+     *                    openapi-generator does unless told otherwise.
+     */
+    public OpenApiReader(Consumer<String> warnings, Composition composition) {
         this.warnings = Objects.requireNonNull(warnings, "warnings");
+        this.composition = Objects.requireNonNull(composition, "composition");
     }
 
     public OpenApiReader() {
@@ -84,7 +96,7 @@ public final class OpenApiReader {
         Map<String, Schema> declared = components.getSchemas() == null
                 ? Map.of() : components.getSchemas();
 
-        Schemas schemas = new Schemas(declared, warnings);
+        Schemas schemas = new Schemas(declared, warnings, composition);
         schemas.readDeclared();
 
         // Read after the declared schemas, and with the same Schemas, because a body

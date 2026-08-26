@@ -91,6 +91,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/ReadOnlyHolder'
 
+  /alternatives:
+    get:
+      operationId: getAlternatives
+      tags: [composition]
+      responses:
+        '200':
+          description: A oneOf, which openapi-generator flattens like an allOf.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseEvent'
+        'default':
+          description: A composition of scalars, which has no shape to describe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Any'
+
 components:
 
   parameters:
@@ -231,3 +249,44 @@ components:
           type: string
         detail:
           type: string
+
+    # A oneOf of a single reference with a discriminator: the commonest form of the
+    # keyword in practice, and not a case of "no single shape" at all. openapi-generator
+    # writes an ordinary class holding the member's properties, with ordinary setters.
+    BaseEvent:
+      oneOf:
+        - $ref: '#/components/schemas/ChangeEvent'
+      discriminator:
+        propertyName: eventType
+
+    ChangeEvent:
+      type: object
+      properties:
+        eventType:
+          type: string
+        payload:
+          type: string
+
+    # Two members that disagree about payload. openapi-generator keeps the last one
+    # silently, so merging here has to keep the last one too.
+    EitherEvent:
+      oneOf:
+        - $ref: '#/components/schemas/ChangeEvent'
+        - $ref: '#/components/schemas/OtherEvent'
+
+    OtherEvent:
+      type: object
+      properties:
+        payload:
+          type: integer
+        extra:
+          type: string
+
+    # A composition of scalars, which really does describe no shape. Merging finds no
+    # properties in it and it is taken whole — which is also what the generator does,
+    # writing the class with no fields at all.
+    Any:
+      anyOf:
+        - type: string
+        - type: integer
+        - type: boolean
