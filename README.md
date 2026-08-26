@@ -41,7 +41,7 @@ specification reader, the explode resolver and the emitter are being built.
 | `wiremock-stubgen-runtime-java` | Hand-written runtime the generated Java code builds on. Ships to the consumer |
 | `wiremock-stubgen-maven-plugin` | Maven delivery |
 | `wiremock-stubgen-fixtures` | The specification every layer is tested against |
-| `wiremock-stubgen-it` | Integration tests: generate, compile, run against WireMock |
+| `wiremock-stubgen-example` | A project that uses the plugin the way a consumer would |
 
 The two `-java` modules share nothing but the word. `codegen-java` reads specifications
 and writes source; it never reaches the consumer's classpath. `runtime-java` is what
@@ -54,6 +54,10 @@ delivery is planned alongside the existing Maven plugin.
 
 `wiremock-stubgen-runtime-java` declares WireMock as `provided`: consumers supply
 their own version, including patched or internally forked builds.
+
+`wiremock-stubgen-example` is where the plugin actually runs: openapi-generator emits
+model classes from a small specification, the plugin generates stubs against them, and
+the generated stubs are exercised against a live WireMock. Start there.
 
 ## Building
 

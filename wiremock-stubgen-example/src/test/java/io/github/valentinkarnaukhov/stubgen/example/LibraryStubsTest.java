@@ -1,0 +1,220 @@
+package io.github.valentinkarnaukhov.stubgen.example;
+
+import com.example.library.model.Book;
+import com.example.library.stubs.books.GetBookStub;
+import com.example.library.stubs.books.SearchBooksStub;
+import com.example.library.stubs.loans.BorrowBookStub;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import io.github.valentinkarnaukhov.stubgen.runtime.StubTarget;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * The generated stubs, used the way a test in a real project would use them.
+ *
+ * <p>This is the only place where the whole chain runs: the Maven plugin reads the
+ * specification during the build, the stubs it writes are compiled against models a real
+ * openapi-generator produced, and what they register is served by a real WireMock over a
+ * real socket. Everything up to here is checked by comparing text.
+ *
+ * <p>Which is why the assertions are about responses and not about generated source. If a
+ * stub compiles and serves what it was told to serve, the generator did its job; how it
+ * spelled that is the goldens' business.
+ */
+class LibraryStubsTest {
+
+    private static WireMockServer wireMock;
+    private static HttpClient http;
+
+    /**
+     * Bodies are read as a tree rather than as text. WireMock pretty-prints what it
+     * serialises, so asserting on the string would be asserting on its formatting.
+     */
+    private static final ObjectMapper JSON = new ObjectMapper();
+
+    private StubTarget target;
+
+    @BeforeAll
+    static void startWireMock() {
+        wireMock = new WireMockServer(options().dynamicPort());
+        wireMock.start();
+        http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+    }
+
+    @AfterAll
+    static void stopWireMock() {
+        wireMock.stop();
+    }
+
+    @BeforeEach
+    void resetStubs() {
+        wireMock.resetAll();
+        target = StubTarget.of(wireMock);
+    }
+
+    /**
+     * A response body described field by field. Nothing names {@code Author}: the builder
+     * creates it because {@code authorName} needs it to exist.
+     */
+    @Test
+    void servesABookDescribedFieldByField() throws Exception {
+        new GetBookStub(target)
+                .pathBookId("978-0201616224")
+                .code200()
+                    .title("The Pragmatic Programmer")
+                    .authorName("Andrew Hunt")
+                    .authorCountry("US")
+                .mock();
+
+        HttpResponse<String> response = get("/books/978-0201616224");
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        JsonNode body = json(response);
+        assertThat(body.at("/title").asText()).isEqualTo("The Pragmatic Programmer");
+        assertThat(body.at("/author/name").asText()).isEqualTo("Andrew Hunt");
+        assertThat(body.at("/author/country").asText()).isEqualTo("US");
+        assertThat(body.has("id")).as("a field nobody described is not sent").isFalse();
+    }
+
+    /**
+     * The same operation, its other declared status code. Both are typed; neither could
+     * have been written without the specification saying 404 answers with a Problem.
+     */
+    @Test
+    void servesTheDeclaredErrorForAnUnknownBook() throws Exception {
+        new GetBookStub(target)
+                .pathBookId("nothing")
+                .code404()
+                    .code("NOT_FOUND")
+                    .message("No book with that identifier.")
+                .mock();
+
+        HttpResponse<String> response = get("/books/nothing");
+
+        assertThat(response.statusCode()).isEqualTo(404);
+        assertThat(json(response).at("/code").asText()).isEqualTo("NOT_FOUND");
+    }
+
+    /**
+     * Query parameters narrow the match, and a list of objects inside the body is
+     * described element by element. {@code addNew()} is what says which element a value
+     * belongs to.
+     */
+    @Test
+    void servesASearchResultBuiltElementByElement() throws Exception {
+        new SearchBooksStub(target)
+                .queryAuthor("Andrew Hunt")
+                .queryAvailableOnly(true)
+                .code200()
+                    .total(2)
+                    .books()
+                        .addNew().title("The Pragmatic Programmer")
+                        .addNew().title("Pragmatic Unit Testing")
+                .mock();
+
+        HttpResponse<String> matching = get("/books?author=Andrew%20Hunt&availableOnly=true");
+        assertThat(matching.statusCode()).isEqualTo(200);
+        JsonNode page = json(matching);
+        assertThat(page.at("/total").asInt()).isEqualTo(2);
+        assertThat(page.at("/books/0/title").asText()).isEqualTo("The Pragmatic Programmer");
+        assertThat(page.at("/books/1/title").asText()).isEqualTo("Pragmatic Unit Testing");
+
+        assertThat(get("/books?author=Someone%20Else&availableOnly=true").statusCode())
+                .isEqualTo(404);
+    }
+
+    /**
+     * A request body matched field by field. The stub answers only requests whose body
+     * carries these values, and says nothing about the rest of it — {@code days} is not
+     * mentioned, so any value will do.
+     */
+    @Test
+    void answersOnlyRequestsWhoseBodyMatches() throws Exception {
+        new BorrowBookStub(target)
+                .requestBody()
+                    .bookId("978-0201616224")
+                    .borrowerEmail("reader@example.com")
+                .exit()
+                .code201()
+                    .id("loan-1")
+                    .bookTitle("The Pragmatic Programmer")
+                    .dueDate("2026-09-14")
+                .mock();
+
+        HttpResponse<String> created = post("/loans", """
+                {
+                  "bookId": "978-0201616224",
+                  "borrower": { "name": "A Reader", "email": "reader@example.com" },
+                  "days": 14
+                }
+                """);
+
+        assertThat(created.statusCode()).isEqualTo(201);
+        JsonNode loan = json(created);
+        assertThat(loan.at("/id").asText()).isEqualTo("loan-1");
+        assertThat(loan.at("/book/title").asText()).isEqualTo("The Pragmatic Programmer");
+        assertThat(loan.at("/dueDate").asText()).isEqualTo("2026-09-14");
+
+        HttpResponse<String> unmatched = post("/loans", """
+                {
+                  "bookId": "978-0201616224",
+                  "borrower": { "email": "someone.else@example.com" }
+                }
+                """);
+
+        assertThat(unmatched.statusCode()).isEqualTo(404);
+    }
+
+    /**
+     * The form that takes a body the caller already has. It exists for the case the
+     * builders cannot serve: a body assembled somewhere else, by something else.
+     */
+    @Test
+    void servesABodyTheCallerAlreadyHas() throws Exception {
+        Book book = new Book()
+                .id("978-0132350884")
+                .title("Clean Code");
+
+        new GetBookStub(target)
+                .pathBookId("978-0132350884")
+                .code200(book)
+                .mock();
+
+        assertThat(json(get("/books/978-0132350884")).at("/title").asText()).isEqualTo("Clean Code");
+    }
+
+    private static JsonNode json(HttpResponse<String> response) throws IOException {
+        return JSON.readTree(response.body());
+    }
+
+    private HttpResponse<String> get(String path) throws IOException, InterruptedException {
+        return http.send(HttpRequest.newBuilder(uri(path)).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> post(String path, String body) throws IOException, InterruptedException {
+        return http.send(HttpRequest.newBuilder(uri(path))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(body))
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
+    private URI uri(String path) {
+        return URI.create(wireMock.baseUrl() + path);
+    }
+}

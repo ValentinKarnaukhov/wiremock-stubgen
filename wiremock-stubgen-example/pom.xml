@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.valentinkarnaukhov</groupId>
+        <artifactId>wiremock-stubgen-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wiremock-stubgen-example</artifactId>
+    <name>wiremock-stubgen-example</name>
+    <description>
+        A project that uses the plugin the way a consumer would, and the only place the
+        plugin actually runs.
+
+        Everything else is tested by calling the generator directly, which never proves the
+        Mojo can be configured, that the language target is found through ServiceLoader out
+        of a plugin classloader, that the output directory is registered as a test source
+        root, or that generated code compiles against models a real openapi-generator
+        emitted rather than ones written by hand to look like it.
+
+        It replaces an integration-test module that contained nothing but a pom. Being an
+        example rather than a test suite is the point: it has to stay readable, which is a
+        harder constraint than passing, and it is what a newcomer will copy.
+    </description>
+
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.install.skip>true</maven.install.skip>
+
+        <openapi-generator.version>7.24.0</openapi-generator.version>
+        <jackson.version>2.19.0</jackson.version>
+        <jakarta.annotation.version>2.1.1</jakarta.annotation.version>
+        <swagger-annotations.version>2.2.34</swagger-annotations.version>
+
+        <spec>${project.basedir}/src/main/openapi/library-api.yaml</spec>
+        <model.package>com.example.library.model</model.package>
+    </properties>
+
+    <dependencies>
+        <!--
+            What the generated models need. A real consumer gets these transitively from
+            the generated client; here there is no client, only its models.
+        -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
+            <version>${jakarta.annotation.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>${swagger-annotations.version}</version>
+        </dependency>
+
+        <!-- What the generated stubs need. -->
+        <dependency>
+            <groupId>io.github.valentinkarnaukhov</groupId>
+            <artifactId>wiremock-stubgen-runtime-java</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+                Stands in for the client library a consumer would already depend on. Models
+                only: an example that also generated an HTTP client would be demonstrating
+                openapi-generator rather than this plugin.
+            -->
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${openapi-generator.version}</version>
+                <executions>
+                    <execution>
+                        <id>models</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${spec}</inputSpec>
+                            <generatorName>java</generatorName>
+                            <library>resttemplate</library>
+                            <modelPackage>${model.package}</modelPackage>
+                            <generateApis>false</generateApis>
+                            <generateApiTests>false</generateApiTests>
+                            <generateApiDocumentation>false</generateApiDocumentation>
+                            <generateModelTests>false</generateModelTests>
+                            <generateModelDocumentation>false</generateModelDocumentation>
+                            <generateSupportingFiles>false</generateSupportingFiles>
+                            <configOptions>
+                                <useJakartaEe>true</useJakartaEe>
+                                <openApiNullable>false</openApiNullable>
+                                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+                            </configOptions>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+                The plugin under demonstration. modelPackage is the same package the
+                generator above wrote into: stubs reference model types, never define them.
+            -->
+            <plugin>
+                <groupId>io.github.valentinkarnaukhov</groupId>
+                <artifactId>wiremock-stubgen-maven-plugin</artifactId>
+                <version>${project.version}</version>
+                <executions>
+                    <execution>
+                        <id>stubs</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <inputSpec>${spec}</inputSpec>
+                            <packageName>com.example.library.stubs</packageName>
+                            <modelPackage>${model.package}</modelPackage>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

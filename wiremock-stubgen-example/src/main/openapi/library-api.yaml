@@ -1,0 +1,164 @@
+openapi: 3.0.3
+
+# The specification the example is built from.
+#
+# Deliberately unlike the fixture in src/main/resources/specs of the fixtures
+# module: that one is a pile of awkward cases and reads like a test. This one is
+# meant to be read. It is small, it is plausible, and between its three
+# operations it reaches every shape a generated stub can take -- a path
+# parameter, query parameters, a response body deep enough to need a builder, a
+# list of objects inside that body, an error code with a schema of its own, and
+# a request body to match on.
+
+info:
+  title: Library API
+  version: 1.0.0
+  description: Borrowing books from a library.
+
+servers:
+  - url: https://library.example.com
+
+paths:
+  /books/{bookId}:
+    get:
+      operationId: getBook
+      tags: [ books ]
+      summary: One book by its identifier.
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: The book.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        404:
+          description: No book with that identifier.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+  /books:
+    get:
+      operationId: searchBooks
+      tags: [ books ]
+      summary: Books matching a search.
+      parameters:
+        - name: author
+          in: query
+          schema:
+            type: string
+        - name: availableOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: The books that matched.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookPage'
+
+  /loans:
+    post:
+      operationId: borrowBook
+      tags: [ loans ]
+      summary: Borrow a book.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanRequest'
+      responses:
+        201:
+          description: The loan that was created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Loan'
+        409:
+          description: The book is already on loan.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+components:
+  schemas:
+
+    Book:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        author:
+          $ref: '#/components/schemas/Author'
+        tags:
+          type: array
+          items:
+            type: string
+
+    Author:
+      type: object
+      properties:
+        name:
+          type: string
+        country:
+          type: string
+
+    BookPage:
+      type: object
+      properties:
+        total:
+          type: integer
+        books:
+          type: array
+          items:
+            $ref: '#/components/schemas/Book'
+
+    LoanRequest:
+      type: object
+      required: [ bookId ]
+      properties:
+        bookId:
+          type: string
+        borrower:
+          $ref: '#/components/schemas/Borrower'
+        days:
+          type: integer
+
+    Borrower:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+
+    Loan:
+      type: object
+      properties:
+        id:
+          type: string
+        book:
+          $ref: '#/components/schemas/Book'
+        dueDate:
+          type: string
+
+    Problem:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string

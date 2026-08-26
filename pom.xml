@@ -48,7 +48,7 @@
         <module>wiremock-stubgen-codegen-java</module>
         <module>wiremock-stubgen-runtime-java</module>
         <module>wiremock-stubgen-maven-plugin</module>
-        <module>wiremock-stubgen-it</module>
+        <module>wiremock-stubgen-example</module>
     </modules>
 
     <properties>
