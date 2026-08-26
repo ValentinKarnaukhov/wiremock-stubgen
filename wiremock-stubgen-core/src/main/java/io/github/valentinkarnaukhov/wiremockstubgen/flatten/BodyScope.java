@@ -36,26 +36,21 @@ public record BodyScope(
     }
 
     /**
-     * The object an accessor's path passes through just before its last step, if any.
+     * The object standing at a path, if this scope has one there.
      *
      * <p>Looked up by path rather than by name: a name may have been escaped away from a
      * reserved word, and matching the escaped form would silently find nothing.
      */
+    public Optional<Intermediate> objectAt(List<String> path) {
+        return intermediates.stream().filter(i -> i.path().equals(path)).findFirst();
+    }
+
+    /** The object an accessor's path passes through just before its last step, if any. */
     public Optional<Intermediate> parentOf(Accessor accessor) {
         if (accessor.path().size() < 2) {
             return Optional.empty();
         }
-        List<String> prefix = accessor.path().subList(0, accessor.path().size() - 1);
-        return intermediates.stream().filter(i -> i.path().equals(prefix)).findFirst();
-    }
-
-    /** The object this one stands in, which is the scope's own schema when there is none. */
-    public Optional<Intermediate> parentOf(Intermediate intermediate) {
-        if (intermediate.path().size() < 2) {
-            return Optional.empty();
-        }
-        List<String> prefix = intermediate.path().subList(0, intermediate.path().size() - 1);
-        return intermediates.stream().filter(i -> i.path().equals(prefix)).findFirst();
+        return objectAt(accessor.path().subList(0, accessor.path().size() - 1));
     }
 
     /** Stable key for the (schema, position) pair this scope is identified by. */

@@ -22,10 +22,6 @@ public final class LanguageTargets {
         return List.copyOf(targets);
     }
 
-    public static List<LanguageTarget> available() {
-        return available(Thread.currentThread().getContextClassLoader());
-    }
-
     public static Optional<LanguageTarget> find(String id, ClassLoader classLoader) {
         Objects.requireNonNull(id, "id");
         return available(classLoader).stream().filter(t -> t.id().equals(id)).findFirst();

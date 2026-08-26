@@ -46,8 +46,8 @@ final class StubEmitter {
     private static final String TEMPLATE = "stub";
 
     /**
-     * Names a generated scope may not use, because the runtime base it extends already
-     * declares them.
+     * Names a generated scope may not use, because something it inherits already declares
+     * them.
      *
      * <p>Java method names, so this belongs to the language target and not the core. It is
      * the union across both sides, and ignores arity, so that one schema does not read
@@ -59,7 +59,13 @@ final class StubEmitter {
             // AbstractRequestBodyMatcher
             "path", "match",
             // generated into every list scope
-            "addNew", "current");
+            "addNew", "current",
+            // java.lang.Object, which every scope extends. A property named after one of
+            // these is not exotic: 'wait' and 'notify' are ordinary words in an API. The
+            // accessor a nested object gets takes no arguments, so it collides head-on
+            // with the final Object method of the same name and the stub does not compile.
+            "getClass", "hashCode", "equals", "toString", "clone", "finalize",
+            "notify", "notifyAll", "wait");
 
     private final TargetOptions options;
 
@@ -282,12 +288,16 @@ final class StubEmitter {
     }
 
     private StubView.ResponseMethod responseMethod(Response response, Optional<BodyModel> model, Imports imports) {
+        // A declared code names itself. 'default' does not name one at all -- it is the
+        // catch-all for everything the specification did not list -- so the status is the
+        // caller's to choose, and picking one here would be inventing it.
         String name = response.isDefault() ? "codeDefault" : "code" + response.statusCode();
-        String status = response.isDefault() ? "200" : String.valueOf(response.statusCode());
+        String status = response.isDefault() ? "status" : String.valueOf(response.statusCode());
         String type = response.body().kind() == TypeRef.Kind.UNKNOWN
                 ? null
                 : imports.use(bodyType(response.body()));
-        return new StubView.ResponseMethod(name, status, type, model.map(m -> builderEntry(m, imports)).orElse(null));
+        return new StubView.ResponseMethod(name, status, response.isDefault(), type,
+                model.map(m -> builderEntry(m, imports)).orElse(null));
     }
 
     /**

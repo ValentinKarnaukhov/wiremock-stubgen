@@ -253,7 +253,7 @@ final class Schemas {
             // here would be a name the stub could refer to and nothing could satisfy.
             return;
         }
-        Merged merged = merge(schema, new LinkedHashSet<>());
+        Merged merged = merge(schema, name, new LinkedHashSet<>());
         if (merged.properties.isEmpty()) {
             reportUndescribable(name, schema);
             return;
@@ -264,13 +264,16 @@ final class Schemas {
         resolved.put(name, new ObjectSchema(name, List.of()));
 
         List<Property> properties = new ArrayList<>();
-        merged.properties.forEach((propertyName, propertySchema) -> properties.add(new Property(
+        merged.properties.forEach((propertyName, declared) -> properties.add(new Property(
                 propertyName,
-                typeOf(propertySchema,
-                        Identifiers.pascalJoin(name, propertyName),
+                typeOf(declared.schema(),
+                        // An inline object is one class, named after the schema that
+                        // declared it and reused wherever the composition is merged. An
+                        // inline enum is not: the generator nests a copy in every class
+                        // that has the property, so this one is named after the merge.
+                        Identifiers.pascalJoin(declared.owner(), propertyName),
                         name + "." + Identifiers.pascalJoin(propertyName) + "Enum"),
-                merged.required.contains(propertyName),
-                readOnly(propertySchema, new LinkedHashSet<>()))));
+                readOnly(declared.schema(), new LinkedHashSet<>()))));
         resolved.put(name, new ObjectSchema(name, properties));
     }
 
@@ -330,24 +333,26 @@ final class Schemas {
      *                 name, this follows references, so mutually composed schemas would
      *                 otherwise not terminate.
      */
-    private Merged merge(Schema<?> schema, Set<String> visiting) {
+    private Merged merge(Schema<?> schema, String owner, Set<String> visiting) {
         Merged merged = new Merged();
         if (schema.getAllOf() != null) {
+            // An inline allOf member is a schema with no name of its own, and the
+            // generator gives it one by inserting AllOf: an object written inline on it
+            // becomes MultiAllOfA, not MultiA. The infix does not carry an index, so every
+            // inline member of the same schema shares it. oneOf and anyOf get no such
+            // infix, which is why the owner is adjusted here and not in memberOf.
             for (Schema<?> member : schema.getAllOf()) {
-                merged.addAll(memberOf(member, visiting));
+                merged.addAll(memberOf(member, owner + "AllOf", visiting));
             }
         }
         if (merging(schema)) {
             for (Schema<?> member : alternatives(schema)) {
-                merged.addAll(memberOf(member, visiting));
+                merged.addAll(memberOf(member, owner, visiting));
             }
         }
         if (schema.getProperties() != null) {
-            schema.getProperties().forEach((key, value) ->
-                    merged.properties.put(String.valueOf(key), (Schema<?>) value));
-        }
-        if (schema.getRequired() != null) {
-            merged.required.addAll(schema.getRequired());
+            schema.getProperties().forEach((key, value) -> merged.properties
+                    .put(String.valueOf(key), new Declared((Schema<?>) value, owner)));
         }
         return merged;
     }
@@ -368,8 +373,9 @@ final class Schemas {
         return members;
     }
 
-    private Merged memberOf(Schema<?> member, Set<String> visiting) {        if (member.get$ref() == null) {
-            return merge(member, visiting);
+    private Merged memberOf(Schema<?> member, String owner, Set<String> visiting) {
+        if (member.get$ref() == null) {
+            return merge(member, owner, visiting);
         }
         String name = referencedName(member.get$ref());
         if (name == null || !declared.containsKey(name)) {
@@ -382,7 +388,7 @@ final class Schemas {
                     + " members; stopping there");
             return new Merged();
         }
-        Merged merged = merge(declared.get(name), visiting);
+        Merged merged = merge(declared.get(name), name, visiting);
         visiting.remove(name);
         return merged;
     }
@@ -393,13 +399,22 @@ final class Schemas {
 
     private static final class Merged {
 
-        private final Map<String, Schema<?>> properties = new LinkedHashMap<>();
-
-        private final Set<String> required = new LinkedHashSet<>();
+        private final Map<String, Declared> properties = new LinkedHashMap<>();
 
         void addAll(Merged other) {
             properties.putAll(other.properties);
-            required.addAll(other.required);
         }
+    }
+
+    /**
+     * A property together with the schema that declared it, which is not the schema it
+     * ends up on once a composition is flattened.
+     *
+     * <p>The distinction decides what an inline object or enum written here will be
+     * called. openapi-generator names it after the declaring schema and reuses that one
+     * class everywhere the composition is merged, so naming it after the merging schema
+     * invents a class nothing generates.
+     */
+    private record Declared(Schema<?> schema, String owner) {
     }
 }

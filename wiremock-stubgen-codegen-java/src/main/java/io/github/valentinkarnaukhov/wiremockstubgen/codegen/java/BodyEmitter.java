@@ -144,9 +144,7 @@ final class BodyEmitter {
                     ? new Creation(new StubView.Local(itemType, "item", "current()"), "item")
                     : new Creation(null, "body");
         }
-        Intermediate parent = scope.intermediates().stream()
-                .filter(candidate -> candidate.path().equals(prefix))
-                .findFirst()
+        Intermediate parent = scope.objectAt(prefix)
                 .orElseThrow(() -> new IllegalStateException("no object recorded at " + prefix));
         String parentType = imports.use(types.modelType(parent.schemaName()));
         return new Creation(
@@ -169,7 +167,7 @@ final class BodyEmitter {
     }
 
     private StubView.MatcherAccessor matcherAccessor(String owner, Accessor accessor) {
-        String jsonPath = "." + String.join(".", accessor.path());
+        String jsonPath = jsonPathOf(accessor.path());
         if (accessor.kind() == Accessor.Kind.NESTED_LIST) {
             return new StubView.MatcherAccessor(
                     owner, accessor.name(), null, true, false,
@@ -188,6 +186,23 @@ final class BodyEmitter {
                 jsonPath,
                 imports.useStatic(WIREMOCK + "client.WireMock.equalTo"),
                 JavaTypes.asQueryValue(javaType, "value"));
+    }
+
+    /**
+     * A path in bracket notation, one step per wire name.
+     *
+     * <p>Dot notation would be shorter and is wrong: a wire name is not an identifier, and
+     * a dot inside one belongs to the name. Written as {@code .loan.reference} it reads as
+     * a field of an object called loan and the match silently never fires. The quotes are
+     * inside a Java string literal in the template, hence the doubled escaping.
+     */
+    private static String jsonPathOf(List<String> path) {
+        StringBuilder expression = new StringBuilder();
+        for (String step : path) {
+            expression.append("['").append(step.replace("\\", "\\\\").replace("'", "\\'"))
+                    .append("']");
+        }
+        return expression.toString();
     }
 
     // ── names ─────────────────────────────────────────────────────────────────

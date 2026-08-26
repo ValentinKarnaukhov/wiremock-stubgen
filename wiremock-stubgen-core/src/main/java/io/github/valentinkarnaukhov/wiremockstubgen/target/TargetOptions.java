@@ -51,9 +51,10 @@ public record TargetOptions(
      * openapi-generator against the same specification, so stubs import theirs and there
      * is no sensible default.
      *
-     * <p>Empty means a target cannot emit anything that names a body type — no
-     * {@code code200(CompositeBody)}, no {@code requestBody(CompositeBody)}. Field
-     * accessors do not need it, so this degrades rather than fails.
+     * <p>Empty is not a lesser mode of the same thing. A builder names the schema of
+     * every object it creates, so with nowhere to name it from a target can offer no
+     * field accessors at all, whatever {@link #explode()} says, and every body degrades
+     * to the opaque form.
      */
     public Optional<String> modelPackageIfPresent() {
         return Optional.ofNullable(modelPackage);

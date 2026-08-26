@@ -8,13 +8,11 @@ import java.util.Objects;
  * @param name     the wire name, exactly as written in the specification
  * @param location where the parameter travels
  * @param type     the parameter type
- * @param required whether the specification marks it required
  */
 public record Parameter(
         String name,
         ParameterLocation location,
-        TypeRef type,
-        boolean required) {
+        TypeRef type) {
 
     public Parameter {
         Objects.requireNonNull(name, "name");

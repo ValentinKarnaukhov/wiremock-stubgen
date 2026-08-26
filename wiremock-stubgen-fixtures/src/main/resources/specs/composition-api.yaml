@@ -148,6 +148,13 @@ components:
           properties:
             extra:
               type: string
+            # An inline member has no name of its own, and the generator makes one by
+            # inserting AllOf, so this object is ComposedAllOfNote rather than ComposedNote.
+            note:
+              type: object
+              properties:
+                text:
+                  type: string
 
     Identified:
       type: object
@@ -168,6 +175,18 @@ components:
         createdAt:
           type: string
           format: date-time
+        # Written inline here but reached through Timestamped and Composed as well. The
+        # generator writes one class, CreatedBy, named after this schema and shared; and
+        # a separate copy of the enum nested in every class that ends up with the
+        # property. Naming either after the merging schema invents a type nothing writes.
+        by:
+          type: object
+          properties:
+            name:
+              type: string
+        state:
+          type: string
+          enum: [DRAFT, FINAL]
 
     Aliases:
       type: object

@@ -49,14 +49,46 @@ class OpenApiCompositionTest {
         // Not a subclass: openapi-generator writes a single class holding every member's
         // properties.
         assertThat(properties("Composed"))
-                .containsExactly("id", "href", "createdAt", "extra");
+                .containsExactly("id", "href", "createdAt", "by", "state", "extra", "note");
     }
 
     @Test
     void flattensAComposedMemberOfAComposition() {
         // Timestamped is itself an allOf, so reaching createdAt above means the merge
         // recursed rather than stopping at the first level.
-        assertThat(properties("Timestamped")).containsExactly("createdAt");
+        assertThat(properties("Timestamped")).containsExactly("createdAt", "by", "state");
+    }
+
+    @Test
+    void namesAnInlineObjectOnAnInlineAllOfMemberAfterTheMemberRatherThanTheSchema() {
+        // The member is a schema with no name, and the generator invents one by inserting
+        // AllOf. The infix carries no index, so several inline members of one schema all
+        // share it. Neither oneOf nor anyOf gets an infix.
+        assertThat(property("Composed", "note").type().schemaName())
+                .isEqualTo("ComposedAllOfNote");
+    }
+
+    @Test
+    void namesAnInlineObjectAfterTheSchemaThatDeclaredIt() {
+        // 'by' is written inline on Created and arrives on Timestamped and Composed only
+        // through the merge. The generator writes one class for it, CreatedBy, and types
+        // all three properties with it. Naming it after the schema being merged would
+        // produce TimestampedBy and ComposedBy, which nothing generates, so the stub
+        // would not compile.
+        assertThat(property("Created", "by").type().schemaName()).isEqualTo("CreatedBy");
+        assertThat(property("Timestamped", "by").type().schemaName()).isEqualTo("CreatedBy");
+        assertThat(property("Composed", "by").type().schemaName()).isEqualTo("CreatedBy");
+    }
+
+    @Test
+    void nestsAnInlineEnumInEveryClassThatEndsUpWithIt() {
+        // The opposite rule, and the reason the two hints differ: an inline enum is not
+        // shared. The generator nests a copy in each class, so here the name follows the
+        // schema being merged rather than the one that declared the property.
+        assertThat(property("Created", "state").type().declaringSchema()).isEqualTo("Created");
+        assertThat(property("Timestamped", "state").type().declaringSchema())
+                .isEqualTo("Timestamped");
+        assertThat(property("Composed", "state").type().declaringSchema()).isEqualTo("Composed");
     }
 
     // ── references outside components/schemas ─────────────────────────────────

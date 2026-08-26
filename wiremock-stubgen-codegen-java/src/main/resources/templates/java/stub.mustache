@@ -38,12 +38,12 @@ public final class {{className}} extends {{abstractStub}}<{{className}}> {
 {{/requestMatcher}}
 {{#responses}}
 
-    public {{className}} {{name}}({{#type}}{{type}} body{{/type}}) {
+    public {{className}} {{name}}({{#statusParameter}}int status{{#type}}, {{/type}}{{/statusParameter}}{{#type}}{{type}} body{{/type}}) {
         return response({{status}}, {{#type}}body{{/type}}{{^type}}null{{/type}});
     }
 {{#builder}}
 
-    public {{builderClass}}<{{className}}> {{name}}() {
+    public {{builderClass}}<{{className}}> {{name}}({{#statusParameter}}int status{{/statusParameter}}) {
         {{declaredType}} body = {{initExpression}};
         response({{status}}, body);
         return new {{builderClass}}<>(this, body);

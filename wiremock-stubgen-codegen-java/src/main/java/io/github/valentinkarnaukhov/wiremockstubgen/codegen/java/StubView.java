@@ -63,7 +63,17 @@ record StubView(
      * means the body is there but cannot be taken apart — a bare string, a map, an array
      * of primitives — or that no model package was configured to name its pieces.
      */
-    record ResponseMethod(String name, String status, String type, BuilderEntry builder) {
+    /**
+     * @param status           the expression put on the wire, which is a literal for a
+     *                         declared code and the caller's argument for {@code default}
+     * @param statusParameter  whether the method takes that status as a parameter
+     */
+    record ResponseMethod(
+            String name,
+            String status,
+            boolean statusParameter,
+            String type,
+            BuilderEntry builder) {
     }
 
     record BuilderEntry(String builderClass, String declaredType, String initExpression) {

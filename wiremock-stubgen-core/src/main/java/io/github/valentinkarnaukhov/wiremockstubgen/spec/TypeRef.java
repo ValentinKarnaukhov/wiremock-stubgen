@@ -1,7 +1,6 @@
 package io.github.valentinkarnaukhov.wiremockstubgen.spec;
 
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * A language-neutral reference to a type described by the specification.
@@ -78,16 +77,4 @@ public record TypeRef(
         return new TypeRef(Kind.UNKNOWN, null, null, null, null, null);
     }
 
-    public Optional<TypeRef> itemsIfPresent() {
-        return Optional.ofNullable(items);
-    }
-
-    /** {@code true} when this type nests other named schemas and therefore can be exploded. */
-    public boolean isExplodable() {
-        return switch (kind) {
-            case OBJECT -> true;
-            case ARRAY, MAP -> items != null && items.isExplodable();
-            default -> false;
-        };
-    }
 }

@@ -208,8 +208,7 @@ public final class OpenApiReader {
             byIdentity.put(location + " " + parameter.getName(), new Parameter(
                     parameter.getName(),
                     location,
-                    schemas.typeOf(parameter.getSchema(), null),
-                    Boolean.TRUE.equals(parameter.getRequired())));
+                    schemas.typeOf(parameter.getSchema(), null)));
         }
         return List.copyOf(byIdentity.values());
     }
@@ -257,8 +256,7 @@ public final class OpenApiReader {
                     statusCode(code, operation),
                     media == null ? TypeRef.unknown()
                             : schemas.typeOf(media.getSchema(),
-                            Identifiers.pascalJoin(operationId, code, "response")),
-                    response.getDescription()));
+                            Identifiers.pascalJoin(operationId, code, "response"))));
         });
         return responses;
     }

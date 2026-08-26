@@ -55,4 +55,28 @@ public abstract class AbstractRequestBodyMatcher<P> extends AbstractBodyScope<P>
     protected final void match(String relativePath) {
         sink.accept(matchingJsonPath(path + relativePath));
     }
+
+    /**
+     * Renders a value as a JSONPath literal, for the filter form where the value is part
+     * of the expression rather than a pattern beside it.
+     *
+     * <p>Text is quoted, and a quote or backslash inside it escaped: otherwise a value as
+     * ordinary as {@code O'Reilly} ends the expression early and the request fails to
+     * parse rather than failing to match. That part is load-bearing and pinned by a test.
+     *
+     * <p>Numbers and booleans are written bare because that is the literal the filter's
+     * own type rules describe. It was measured that the implementation WireMock uses today
+     * compares {@code '3'} to {@code 3} as equal, so quoting them would also work; that
+     * coercion is a property of one implementation rather than something JSONPath promises.
+     */
+    protected static String literal(Object value) {
+        if (value == null) {
+            return "null";
+        }
+        if (value instanceof Number || value instanceof Boolean) {
+            return value.toString();
+        }
+        String text = value.toString().replace("\\", "\\\\").replace("'", "\\'");
+        return "'" + text + "'";
+    }
 }

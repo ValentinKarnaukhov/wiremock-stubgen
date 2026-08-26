@@ -15,7 +15,7 @@
     {{#valueList}}
 
         public {{owner}}<P> {{name}}({{type}} value) {
-            match("{{jsonPath}}[?(@ == '" + {{valueExpression}} + "')]");
+            match("{{jsonPath}}[?(@ == " + literal(value) + ")]");
             return this;
         }
     {{/valueList}}

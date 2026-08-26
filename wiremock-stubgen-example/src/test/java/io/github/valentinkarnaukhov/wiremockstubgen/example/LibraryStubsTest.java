@@ -154,6 +154,7 @@ class LibraryStubsTest {
                     .id("loan-1")
                     .bookTitle("The Pragmatic Programmer")
                     .dueDate("2026-09-14")
+                    .notifyByEmail(true)
                 .mock();
 
         HttpResponse<String> created = post("/loans", """
@@ -169,6 +170,9 @@ class LibraryStubsTest {
         assertThat(loan.at("/id").asText()).isEqualTo("loan-1");
         assertThat(loan.at("/book/title").asText()).isEqualTo("The Pragmatic Programmer");
         assertThat(loan.at("/dueDate").asText()).isEqualTo("2026-09-14");
+        // Reached through a scope the stub had to call _notify(), because notify() is
+        // taken by every Java class. The name the caller uses is unaffected.
+        assertThat(loan.at("/notify/byEmail").asBoolean()).isTrue();
 
         HttpResponse<String> unmatched = post("/loans", """
                 {
@@ -178,6 +182,84 @@ class LibraryStubsTest {
                 """);
 
         assertThat(unmatched.statusCode()).isEqualTo(404);
+    }
+
+    /**
+     * A wire name is not an identifier: a dot in it belongs to the name and must not be
+     * read as a step down the path. A list is matched by asking whether any element equals
+     * the value, through a filter the value is written into, so a quote in it has to be
+     * escaped rather than allowed to end the expression.
+     */
+    @Test
+    void matchesOnAwkwardWireNamesAndOnListsOfNumbers() throws Exception {
+        new BorrowBookStub(target)
+                .requestBody()
+                    .bookId("978-0201616224")
+                    .loanReference("ref-1")
+                    // A quote inside the value would otherwise end the filter expression
+                    // early, and the stub would fail at request time rather than match.
+                    .notes("O'Reilly")
+                    .editions(3)
+                .exit()
+                .code201()
+                    .id("loan-2")
+                .mock();
+
+        HttpResponse<String> created = post("/loans", """
+                {
+                  "bookId": "978-0201616224",
+                  "loan.reference": "ref-1",
+                  "notes": ["O'Reilly", "other"],
+                  "editions": [1, 3, 7]
+                }
+                """);
+
+        assertThat(created.statusCode()).isEqualTo(201);
+
+        HttpResponse<String> nested = post("/loans", """
+                {
+                  "bookId": "978-0201616224",
+                  "loan": { "reference": "ref-1" },
+                  "notes": ["O'Reilly"],
+                  "editions": [1, 3, 7]
+                }
+                """);
+
+        assertThat(nested.statusCode())
+                .describedAs("loan.reference is one name, not an object with a field in it")
+                .isEqualTo(404);
+
+        HttpResponse<String> otherEdition = post("/loans", """
+                {
+                  "bookId": "978-0201616224",
+                  "loan.reference": "ref-1",
+                  "notes": ["O'Reilly"],
+                  "editions": [1, 7]
+                }
+                """);
+
+        assertThat(otherEdition.statusCode())
+                .describedAs("the list has to contain the edition asked for")
+                .isEqualTo(404);
+    }
+
+    /**
+     * A response written as {@code default} names no status of its own, so the stub takes
+     * one from the caller rather than inventing 200 for a body that describes a failure.
+     */
+    @Test
+    void servesTheCatchAllResponseUnderAStatusTheCallerChooses() throws Exception {
+        new GetBookStub(target)
+                .pathBookId("978-0201616224")
+                .codeDefault(503)
+                    .code("UNAVAILABLE")
+                    .message("The catalogue is down.")
+                .mock();
+
+        HttpResponse<String> response = get("/books/978-0201616224");
+
+        assertThat(response.statusCode()).isEqualTo(503);
+        assertThat(json(response).at("/code").asText()).isEqualTo("UNAVAILABLE");
     }
 
     /**

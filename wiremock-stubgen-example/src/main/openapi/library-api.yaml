@@ -42,6 +42,14 @@ paths:
         # can fail this way.
         404:
           $ref: '#/components/responses/NotFound'
+        # The catch-all for everything not listed. It names no status, so the stub
+        # cannot invent one and asks the caller for it.
+        default:
+          description: Anything else that went wrong.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
 
   /books:
     get:
@@ -206,6 +214,21 @@ components:
           $ref: '#/components/schemas/Borrower'
         days:
           type: integer
+        # A list of numbers, matched by asking whether any element equals the value.
+        editions:
+          type: array
+          items:
+            type: integer
+        # A wire name is not an identifier and need not look like one. A dot in it is
+        # ordinary JSON and must not be read as a step down the path.
+        loan.reference:
+          type: string
+        # Matched through a filter, where the value is part of the expression rather
+        # than a pattern beside it, so a quote in it has to be escaped.
+        notes:
+          type: array
+          items:
+            type: string
 
     Borrower:
       type: object
@@ -227,6 +250,17 @@ components:
               $ref: '#/components/schemas/Book'
             dueDate:
               type: string
+            # A perfectly ordinary word that also names a method every Java class
+            # inherits. A nested object at the root of a body opens a scope, and the
+            # accessor that opens it takes no arguments, so calling it notify() would
+            # clash with the final Object.notify() and the stub would not compile.
+            notify:
+              type: object
+              properties:
+                byEmail:
+                  type: boolean
+                bySms:
+                  type: boolean
 
     Reference:
       type: object

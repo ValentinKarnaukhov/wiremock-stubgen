@@ -216,9 +216,9 @@ public final class GetResponseErrorsStub extends AbstractStub<GetResponseErrorsS
     // NAMING. codeNNN cannot collide with a parameter-derived name, because
     // parameter methods carry a location prefix and no location is spelt "code".
     //
-    // OPEN — DEFAULT RESPONSE. codeDefault(Schema) is the natural mapping, but the
-    // status to send is then unknown and would have to be supplied. Not covered by
-    // the fixture.
+    // CLOSED — DEFAULT RESPONSE. codeDefault takes the status as a parameter: the
+    // response names none, so any the generator picked would be invented. Covered by
+    // the example rather than here, where no operation declares one.
     //
     // OPEN — CONTENT TYPE. AbstractStub defaults to application/json. Anything else
     // would also have to stop serialising as JSON, and several media types for one

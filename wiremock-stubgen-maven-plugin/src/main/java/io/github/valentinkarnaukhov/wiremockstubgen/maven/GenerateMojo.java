@@ -116,11 +116,11 @@ public class GenerateMojo extends AbstractMojo {
                 .formatted(api.operations().size(), api.reachableSchemas().size(), api.title()));
 
         if (targetOptions.modelPackageIfPresent().isEmpty()) {
-            String consequence = explode
-                    ? "stubs will describe bodies field by field but will not be able to name a body type"
-                    : "with explode off, stubs will not be able to describe bodies at all";
-            getLog().warn("modelPackage is not set: %s. ".formatted(consequence)
-                    + "Point it at the package openapi-generator writes your client models into.");
+            getLog().warn("modelPackage is not set, so there are no model classes to name:"
+                    + " stubs will take each body whole, as java.lang.Object, and offer no"
+                    + " accessors into it whatever explode says."
+                    + " Point modelPackage at the package openapi-generator writes your"
+                    + " client models into.");
         }
 
         List<GeneratedFile> files = target.generate(api, targetOptions);

@@ -84,17 +84,17 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
         }
 
         public CompositeBodyMatcher<P> primitive(String value) {
-            match(".primitive", equalTo(value));
+            match("['primitive']", equalTo(value));
             return this;
         }
 
         public CompositeBodyMatcher<P> compositeInnerField(String value) {
-            match(".composite.innerField", equalTo(value));
+            match("['composite']['innerField']", equalTo(value));
             return this;
         }
 
         public CompositeBodyMatcher<P> compositeDeepFieldDeepestField(String value) {
-            match(".composite.deepField.deepestField", equalTo(value));
+            match("['composite']['deepField']['deepestField']", equalTo(value));
             return this;
         }
 
@@ -104,7 +104,7 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
          * different question, which requestBody(...) already answers.
          */
         public CompositeBodyMatcher<P> primitiveList(String value) {
-            match(".primitiveList[?(@ == '" + value + "')]");
+            match("['primitiveList'][?(@ == " + literal(value) + ")]");
             return this;
         }
 
@@ -114,7 +114,7 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
          * matches a request where at least one element qualifies.
          */
         public CompositeFieldMatcher<CompositeBodyMatcher<P>> compositeList() {
-            return new CompositeFieldMatcher<>(this, path() + ".compositeList[*]");
+            return new CompositeFieldMatcher<>(this, path() + "['compositeList'][*]");
         }
     }
 
@@ -126,12 +126,12 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
         }
 
         public CompositeFieldMatcher<P> innerField(String value) {
-            match(".innerField", equalTo(value));
+            match("['innerField']", equalTo(value));
             return this;
         }
 
         public CompositeFieldMatcher<P> deepFieldDeepestField(String value) {
-            match(".deepField.deepestField", equalTo(value));
+            match("['deepField']['deepestField']", equalTo(value));
             return this;
         }
     }
