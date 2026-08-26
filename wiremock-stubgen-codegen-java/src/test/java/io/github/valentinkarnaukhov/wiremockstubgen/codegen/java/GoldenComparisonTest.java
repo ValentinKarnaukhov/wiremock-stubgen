@@ -80,7 +80,8 @@ class GoldenComparisonTest {
     @Test
     void putsEverythingInOnePackageWhenGroupingIsOff() {
         List<GeneratedFile> files = new JavaLanguageTarget()
-                .generate(api, options().grouping(Grouping.NONE).build());
+                .generate(api, options().grouping(Grouping.NONE).build(), warning -> {
+                });
 
         assertThat(files).extracting(GeneratedFile::relativePath)
                 .allSatisfy(path -> assertThat(path).startsWith("com/example/stubs/"))
@@ -90,7 +91,8 @@ class GoldenComparisonTest {
     @Test
     void offersOnlyTheWholeBodyFormWhenExplodeIsOff() {
         List<GeneratedFile> files = new JavaLanguageTarget()
-                .generate(api, options().explode(false).build());
+                .generate(api, options().explode(false).build(), warning -> {
+                });
 
         String source = contentOf(files, "com/example/stubs/getresponseerrors/GetResponseErrorsStub.java");
         assertThat(source).contains("public GetResponseErrorsStub code200(CompositeBody body)");
@@ -103,7 +105,8 @@ class GoldenComparisonTest {
     @Test
     void fallsBackToObjectWhenNoModelPackageIsConfigured() {
         List<GeneratedFile> files = new JavaLanguageTarget()
-                .generate(api, TargetOptions.builder("com.example.stubs").build());
+                .generate(api, TargetOptions.builder("com.example.stubs").build(), warning -> {
+                });
 
         String source = contentOf(files, "com/example/stubs/getresponseerrors/GetResponseErrorsStub.java");
         assertThat(source)
@@ -125,7 +128,8 @@ class GoldenComparisonTest {
     }
 
     private static List<GeneratedFile> generate() {
-        return new JavaLanguageTarget().generate(api, options().build());
+        return new JavaLanguageTarget().generate(api, options().build(), warning -> {
+        });
     }
 
     private static TargetOptions.Builder options() {

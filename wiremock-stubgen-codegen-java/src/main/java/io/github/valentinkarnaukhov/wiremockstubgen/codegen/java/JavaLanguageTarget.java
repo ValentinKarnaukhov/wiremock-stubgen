@@ -7,6 +7,7 @@ import io.github.valentinkarnaukhov.wiremockstubgen.target.TargetOptions;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Emits Java WireMock stub builders.
@@ -31,10 +32,11 @@ public final class JavaLanguageTarget implements LanguageTarget {
     }
 
     @Override
-    public List<GeneratedFile> generate(StubApi api, TargetOptions options) {
+    public List<GeneratedFile> generate(StubApi api, TargetOptions options, Consumer<String> warnings) {
         Objects.requireNonNull(api, "api");
         Objects.requireNonNull(options, "options");
-        StubEmitter emitter = new StubEmitter(api, options);
+        Objects.requireNonNull(warnings, "warnings");
+        StubEmitter emitter = new StubEmitter(api, options, warnings);
         return api.operations().stream().map(emitter::emit).toList();
     }
 }

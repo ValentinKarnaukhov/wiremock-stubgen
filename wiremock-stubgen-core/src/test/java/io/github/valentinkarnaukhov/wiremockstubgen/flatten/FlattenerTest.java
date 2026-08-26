@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -122,7 +123,8 @@ class FlattenerTest {
 
     @Test
     void producesNoModelForABodyItCannotTakeApart() {
-        Flattener flattener = new Flattener(api, FlatteningOptions.defaults());
+        Flattener flattener = new Flattener(api, FlatteningOptions.defaults(), warning -> {
+        });
 
         assertThat(flattener.flatten(null, BodySide.RESPONSE)).isEmpty();
         assertThat(flattener.flatten(TypeRef.primitive("string", null), BodySide.RESPONSE)).isEmpty();
@@ -159,6 +161,38 @@ class FlattenerTest {
                 .isEqualTo(names(model.root()));
     }
 
+    @Test
+    void saysWhenTheDepthLimitLeftSomethingUnreachable() {
+        List<String> warnings = new ArrayList<>();
+        new Flattener(api, depth(1), warnings::add)
+                .flatten(TypeRef.object("RecursiveBody"), BodySide.RESPONSE);
+
+        // One line per schema, not per route and not per operation: a route ends short at
+        // every property of a schema that refers back to itself, and the same schema is
+        // flattened again for every operation that mentions it.
+        assertThat(warnings).hasSize(1).allSatisfy(warning -> assertThat(warning)
+                .contains("RecursiveBody", "maxDepth 1", "route(s) end without accessors"));
+    }
+
+    @Test
+    void saysWhatItLeftOutOnlyOncePerSchema() {
+        List<String> warnings = new ArrayList<>();
+        Flattener flattener = new Flattener(api, depth(1), warnings::add);
+        flattener.flatten(TypeRef.object("RecursiveBody"), BodySide.RESPONSE);
+        flattener.flatten(TypeRef.object("RecursiveBody"), BodySide.REQUEST);
+
+        assertThat(warnings).hasSize(1);
+    }
+
+    @Test
+    void staysQuietWhenNothingWasCutShort() {
+        List<String> warnings = new ArrayList<>();
+        new Flattener(api, FlatteningOptions.defaults(), warnings::add)
+                .flatten(compositeBodyList(), BodySide.RESPONSE);
+
+        assertThat(warnings).isEmpty();
+    }
+
     // ── the fatal case ────────────────────────────────────────────────────────
 
     @Test
@@ -170,7 +204,8 @@ class FlattenerTest {
                 schema("Inner", property("innerField", string())),
                 schema("Outer", property("field", string())));
 
-        assertThatThrownBy(() -> new Flattener(colliding, FlatteningOptions.defaults())
+        assertThatThrownBy(() -> new Flattener(colliding, FlatteningOptions.defaults(), warning -> {
+        })
                 .flatten(TypeRef.object("Root"), BodySide.RESPONSE))
                 .isInstanceOf(FlatteningException.class)
                 .hasMessageContaining("compositeInnerField")
@@ -193,7 +228,8 @@ class FlattenerTest {
     }
 
     private static BodyModel flatten(TypeRef body, BodySide side, FlatteningOptions options) {
-        return new Flattener(api, options).flatten(body, side).orElseThrow();
+        return new Flattener(api, options, warning -> {
+        }).flatten(body, side).orElseThrow();
     }
 
     private static List<String> names(BodyScope scope) {

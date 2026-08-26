@@ -123,7 +123,7 @@ public class GenerateMojo extends AbstractMojo {
                     + " client models into.");
         }
 
-        List<GeneratedFile> files = target.generate(api, targetOptions);
+        List<GeneratedFile> files = target.generate(api, targetOptions, getLog()::warn);
 
         write(files);
 

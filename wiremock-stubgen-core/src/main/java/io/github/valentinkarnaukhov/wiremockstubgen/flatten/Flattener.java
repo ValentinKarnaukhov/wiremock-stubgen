@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Turns a body schema into the scopes and accessors a stub is built from.
@@ -50,9 +51,18 @@ public final class Flattener {
 
     private final FlatteningOptions options;
 
-    public Flattener(StubApi api, FlatteningOptions options) {
+    private final Consumer<String> warnings;
+
+    /**
+     * What has already been said. One Flattener does a whole run, and a schema reached
+     * from twenty operations would otherwise report the same truncation twenty times.
+     */
+    private final Set<String> reported = new LinkedHashSet<>();
+
+    public Flattener(StubApi api, FlatteningOptions options, Consumer<String> warnings) {
         this.api = Objects.requireNonNull(api, "api");
         this.options = Objects.requireNonNull(options, "options");
+        this.warnings = Objects.requireNonNull(warnings, "warnings");
     }
 
     /**
@@ -114,13 +124,28 @@ public final class Flattener {
     private Flattened flattenSchema(ObjectSchema schema) {
         Map<String, Accessor> byName = new LinkedHashMap<>();
         List<Intermediate> intermediates = new ArrayList<>();
-        collect(schema, List.of(), byName, intermediates, schema.name());
+        List<List<String>> truncated = new ArrayList<>();
+        collect(schema, List.of(), byName, intermediates, schema.name(), truncated);
+        if (!truncated.isEmpty()) {
+            String message = ("schema '%s' is deeper than maxDepth %d, so %d route(s) end "
+                    + "without accessors, the first at '%s'. Properties under them can only "
+                    + "be reached by raising maxDepth or by taking the body whole.")
+                    .formatted(schema.name(), options.maxDepth(), truncated.size(),
+                            join(truncated.get(0)));
+            if (reported.add(message)) {
+                warnings.accept(message);
+            }
+        }
         return new Flattened(List.copyOf(byName.values()), List.copyOf(intermediates));
     }
 
     private void collect(ObjectSchema schema, List<String> prefix, Map<String, Accessor> byName,
-                         List<Intermediate> intermediates, String scopeName) {
+                         List<Intermediate> intermediates, String scopeName,
+                         List<List<String>> truncated) {
         if (prefix.size() >= options.maxDepth()) {
+            // Reaching here at all means a described object was cut off, and a described
+            // object always has properties: the reader drops the ones that do not.
+            truncated.add(prefix);
             return;
         }
         for (Property property : schema.properties()) {
@@ -134,7 +159,7 @@ public final class Flattener {
                 intermediates.add(new Intermediate(
                         options.accessorName().apply(path), path, nested.get().name(),
                         property.readOnly()));
-                collect(nested.get(), path, byName, intermediates, scopeName);
+                collect(nested.get(), path, byName, intermediates, scopeName, truncated);
                 continue;
             }
 

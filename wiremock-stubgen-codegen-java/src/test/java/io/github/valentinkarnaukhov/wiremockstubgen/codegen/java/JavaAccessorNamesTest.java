@@ -79,7 +79,8 @@ class JavaAccessorNamesTest {
                 new Property("_exit", TypeRef.primitive("string", null), false)));
         StubApi colliding = new StubApi("hand-built", List.of(), Map.of("Root", root));
 
-        assertThatThrownBy(() -> new Flattener(colliding, javaOptions())
+        assertThatThrownBy(() -> new Flattener(colliding, javaOptions(), warning -> {
+        })
                 .flatten(TypeRef.object("Root"), BodySide.REQUEST))
                 .isInstanceOf(FlatteningException.class)
                 .hasMessageContaining("'_exit'");
@@ -91,7 +92,8 @@ class JavaAccessorNamesTest {
     }
 
     private static BodyScope flatten(TypeRef body) {
-        return new Flattener(api, javaOptions())
+        return new Flattener(api, javaOptions(), warning -> {
+        })
                 .flatten(body, BodySide.RESPONSE).orElseThrow().root();
     }
 

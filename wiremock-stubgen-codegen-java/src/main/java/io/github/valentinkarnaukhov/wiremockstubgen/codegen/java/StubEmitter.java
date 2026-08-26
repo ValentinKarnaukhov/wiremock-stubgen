@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Builds the view of one stub class and hands it to a template.
@@ -74,12 +75,12 @@ final class StubEmitter {
 
     private final Flattener flattener;
 
-    StubEmitter(StubApi api, TargetOptions options) {
+    StubEmitter(StubApi api, TargetOptions options, Consumer<String> warnings) {
         this.options = options;
         this.types = new JavaTypes(options);
         this.templates = Templates.from(options);
         this.flattener = new Flattener(api, new FlatteningOptions(
-                options.maxDepth(), new JavaAccessorNames(RESERVED)));
+                options.maxDepth(), new JavaAccessorNames(RESERVED)), warnings);
     }
 
     GeneratedFile emit(Operation operation) {
