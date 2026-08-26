@@ -4,6 +4,7 @@ import com.example.library.model.Book;
 import com.example.library.stubs.books.GetBookStub;
 import com.example.library.stubs.books.SearchBooksStub;
 import com.example.library.stubs.loans.BorrowBookStub;
+import com.example.library.stubs.loans.ReturnLoanStub;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -197,6 +198,59 @@ class LibraryStubsTest {
         assertThat(json(get("/books/978-0132350884")).at("/title").asText()).isEqualTo("Clean Code");
     }
 
+    /**
+     * A composed resource reads as one flat set of accessors, because the models have no
+     * inheritance: openapi-generator merges every member of an allOf into one class.
+     */
+    @Test
+    void servesAComposedResourceThroughOneFlatSetOfAccessors() throws Exception {
+        new BorrowBookStub(target)
+                .code201()
+                    // id and href come from Reference, dueDate from the member written in
+                    // place. Nothing in the generated API says which.
+                    .id("loan-1")
+                    .href("/loans/loan-1")
+                    .dueDate("2024-03-01")
+                    .bookTitle("Effective Java")
+                .mock();
+
+        JsonNode loan = json(post("/loans", "{\"bookId\":\"978-0134685991\"}"));
+        assertThat(loan.at("/id").asText()).isEqualTo("loan-1");
+        assertThat(loan.at("/href").asText()).isEqualTo("/loans/loan-1");
+        assertThat(loan.at("/dueDate").asText()).isEqualTo("2024-03-01");
+        assertThat(loan.at("/book/title").asText()).isEqualTo("Effective Java");
+    }
+
+    /**
+     * A body written out in place instead of declared, and an error body the specification
+     * mentions only by reference. Neither is named anywhere the caller can see.
+     */
+    @Test
+    void servesAnInlineBodyAndASharedErrorBody() throws Exception {
+        new ReturnLoanStub(target)
+                .pathLoanId("loan-1")
+                .code200()
+                    .returnedAt("2024-02-20")
+                    .lateFeeAmount(new java.math.BigDecimal("2.50"))
+                    .lateFeeCurrency("EUR")
+                .mock();
+
+        JsonNode returned = json(delete("/loans/loan-1"));
+        assertThat(returned.at("/returnedAt").asText()).isEqualTo("2024-02-20");
+        assertThat(returned.at("/lateFee/currency").asText()).isEqualTo("EUR");
+
+        wireMock.resetAll();
+        new ReturnLoanStub(StubTarget.of(wireMock))
+                .pathLoanId("gone")
+                // Reachable only because the reference to components/responses was
+                // followed; before it was, this response had no body and no method.
+                .code404()
+                    .code("NOT_FOUND")
+                .mock();
+
+        assertThat(json(delete("/loans/gone")).at("/code").asText()).isEqualTo("NOT_FOUND");
+    }
+
     private static JsonNode json(HttpResponse<String> response) throws IOException {
         return JSON.readTree(response.body());
     }
@@ -211,6 +265,11 @@ class LibraryStubsTest {
                         .header("Content-Type", "application/json")
                         .POST(HttpRequest.BodyPublishers.ofString(body))
                         .build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> delete(String path) throws IOException, InterruptedException {
+        return http.send(HttpRequest.newBuilder(uri(path)).DELETE().build(),
                 HttpResponse.BodyHandlers.ofString());
     }
 

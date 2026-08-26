@@ -1,19 +1,21 @@
 package io.github.valentinkarnaukhov.stubgen.openapi;
 
+import io.github.valentinkarnaukhov.stubgen.naming.Identifiers;
 import io.github.valentinkarnaukhov.stubgen.spec.HttpMethod;
-import io.github.valentinkarnaukhov.stubgen.spec.ObjectSchema;
 import io.github.valentinkarnaukhov.stubgen.spec.Operation;
 import io.github.valentinkarnaukhov.stubgen.spec.Parameter;
 import io.github.valentinkarnaukhov.stubgen.spec.ParameterLocation;
-import io.github.valentinkarnaukhov.stubgen.spec.Property;
 import io.github.valentinkarnaukhov.stubgen.spec.Response;
 import io.github.valentinkarnaukhov.stubgen.spec.StubApi;
 import io.github.valentinkarnaukhov.stubgen.spec.TypeRef;
 import io.swagger.parser.OpenAPIParser;
+import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.parameters.RequestBody;
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 
@@ -78,12 +80,22 @@ public final class OpenApiReader {
         }
         result.getMessages().forEach(warnings);
 
-        Map<String, Schema> components = document.getComponents() == null
-                || document.getComponents().getSchemas() == null
-                ? Map.of()
-                : document.getComponents().getSchemas();
+        Components components = document.getComponents() == null ? new Components() : document.getComponents();
+        Map<String, Schema> declared = components.getSchemas() == null
+                ? Map.of() : components.getSchemas();
 
-        return new StubApi(title(document), operations(document, components), schemas(components));
+        Schemas schemas = new Schemas(declared, warnings);
+        schemas.readDeclared();
+
+        // Read after the declared schemas, and with the same Schemas, because a body
+        // written out in place is a schema too and has to land in the same map.
+        List<Operation> operations = operations(document, components, schemas);
+
+        if (!declared.isEmpty() && schemas.resolved().isEmpty()) {
+            warnings.accept("None of the " + declared.size() + " schemas this specification"
+                    + " declares could be described; every stub will take its bodies whole");
+        }
+        return new StubApi(title(document), operations, schemas.resolved());
     }
 
     private String title(OpenAPI document) {
@@ -96,29 +108,30 @@ public final class OpenApiReader {
 
     // ── OPERATIONS ────────────────────────────────────────────────────────────
 
-    private List<Operation> operations(OpenAPI document, Map<String, Schema> components) {
+    private List<Operation> operations(OpenAPI document, Components components, Schemas schemas) {
         List<Operation> operations = new ArrayList<>();
         if (document.getPaths() == null) {
             return operations;
         }
         document.getPaths().forEach((path, pathItem) ->
                 pathItem.readOperationsMap().forEach((method, operation) ->
-                        operations.add(operation(path, method, operation, pathItem, components))));
+                        operations.add(operation(path, method, operation, pathItem, components, schemas))));
         return operations;
     }
 
     private Operation operation(String path, PathItem.HttpMethod method,
                                 io.swagger.v3.oas.models.Operation operation,
-                                PathItem pathItem, Map<String, Schema> components) {
+                                PathItem pathItem, Components components, Schemas schemas) {
         HttpMethod httpMethod = HttpMethod.valueOf(method.name());
+        String operationId = operationId(operation, httpMethod, path);
         return new Operation(
-                operationId(operation, httpMethod, path),
+                operationId,
                 tag(operation, path),
                 path,
                 httpMethod,
-                parameters(operation, pathItem, components),
-                requestBody(operation, components),
-                responses(operation, components));
+                parameters(operation, pathItem, components, schemas),
+                requestBody(operation, operationId, components, schemas),
+                responses(operation, operationId, components, schemas));
     }
 
     /**
@@ -166,7 +179,7 @@ public final class OpenApiReader {
      * simply concatenated the two lists would emit the parameter twice.
      */
     private List<Parameter> parameters(io.swagger.v3.oas.models.Operation operation,
-                                       PathItem pathItem, Map<String, Schema> components) {
+                                       PathItem pathItem, Components components, Schemas schemas) {
         Map<String, Parameter> byIdentity = new LinkedHashMap<>();
         List<io.swagger.v3.oas.models.parameters.Parameter> declared = new ArrayList<>();
         if (pathItem.getParameters() != null) {
@@ -175,7 +188,13 @@ public final class OpenApiReader {
         if (operation.getParameters() != null) {
             declared.addAll(operation.getParameters());
         }
-        for (io.swagger.v3.oas.models.parameters.Parameter parameter : declared) {
+        for (io.swagger.v3.oas.models.parameters.Parameter reference : declared) {
+            io.swagger.v3.oas.models.parameters.Parameter parameter =
+                    dereference(reference, components.getParameters(), "#/components/parameters/",
+                            io.swagger.v3.oas.models.parameters.Parameter::get$ref);
+            if (parameter == null) {
+                continue;
+            }
             ParameterLocation location = location(parameter.getIn());
             if (location == null) {
                 warnings.accept("Ignoring parameter " + parameter.getName()
@@ -185,7 +204,7 @@ public final class OpenApiReader {
             byIdentity.put(location + " " + parameter.getName(), new Parameter(
                     parameter.getName(),
                     location,
-                    typeOf(parameter.getSchema(), components),
+                    schemas.typeOf(parameter.getSchema(), null),
                     Boolean.TRUE.equals(parameter.getRequired())));
         }
         return List.copyOf(byIdentity.values());
@@ -204,32 +223,75 @@ public final class OpenApiReader {
         };
     }
 
-    private TypeRef requestBody(io.swagger.v3.oas.models.Operation operation,
-                                Map<String, Schema> components) {
-        if (operation.getRequestBody() == null || operation.getRequestBody().getContent() == null) {
+    private TypeRef requestBody(io.swagger.v3.oas.models.Operation operation, String operationId,
+                                Components components, Schemas schemas) {
+        RequestBody body = dereference(operation.getRequestBody(), components.getRequestBodies(),
+                "#/components/requestBodies/", RequestBody::get$ref);
+        if (body == null || body.getContent() == null) {
             return null;
         }
-        MediaType media = jsonMediaType(operation.getRequestBody().getContent(),
-                "the request body of " + operation.getOperationId());
-        return media == null ? null : typeOf(media.getSchema(), components);
+        MediaType media = jsonMediaType(body.getContent(), "the request body of " + operationId);
+        return media == null ? null
+                : schemas.typeOf(media.getSchema(), Identifiers.pascalJoin(operationId, "request"));
     }
 
-    private List<Response> responses(io.swagger.v3.oas.models.Operation operation,
-                                     Map<String, Schema> components) {
+    private List<Response> responses(io.swagger.v3.oas.models.Operation operation, String operationId,
+                                     Components components, Schemas schemas) {
         List<Response> responses = new ArrayList<>();
         if (operation.getResponses() == null) {
             return responses;
         }
-        operation.getResponses().forEach((code, response) -> {
+        operation.getResponses().forEach((code, reference) -> {
+            ApiResponse response = dereference(reference, components.getResponses(),
+                    "#/components/responses/", ApiResponse::get$ref);
+            if (response == null) {
+                return;
+            }
             MediaType media = response.getContent() == null ? null
-                    : jsonMediaType(response.getContent(),
-                    "response " + code + " of " + operation.getOperationId());
+                    : jsonMediaType(response.getContent(), "response " + code + " of " + operationId);
             responses.add(new Response(
                     statusCode(code, operation),
-                    media == null ? TypeRef.unknown() : typeOf(media.getSchema(), components),
+                    media == null ? TypeRef.unknown()
+                            : schemas.typeOf(media.getSchema(),
+                            Identifiers.pascalJoin(operationId, code, "response")),
                     response.getDescription()));
         });
         return responses;
+    }
+
+    /**
+     * Follows a {@code $ref} that points at a component other than a schema.
+     *
+     * <p>swagger-parser leaves these alone. With {@code setResolve(true)} a response
+     * written as {@code $ref: '#/components/responses/BadRequest'} still arrives with its
+     * {@code $ref} set and its content null — verified against the parser, not assumed —
+     * so following it is ours to do, exactly as it is for a schema reference.
+     *
+     * <p>It matters more than it looks. Shared error responses are how large
+     * specifications avoid repeating themselves: in one real specification of 23
+     * operations, 121 of its 154 responses were written this way, and every one of them
+     * was silently losing its body.
+     */
+    private <T> T dereference(T reference, Map<String, T> components, String prefix,
+                              java.util.function.Function<T, String> refOf) {
+        if (reference == null) {
+            return null;
+        }
+        String ref = refOf.apply(reference);
+        if (ref == null) {
+            return reference;
+        }
+        if (!ref.startsWith(prefix)) {
+            warnings.accept("Ignoring the unsupported reference " + ref);
+            return null;
+        }
+        String name = ref.substring(prefix.length());
+        T target = components == null ? null : components.get(name);
+        if (target == null) {
+            warnings.accept("Ignoring the dangling reference " + ref);
+            return null;
+        }
+        return target;
     }
 
     private Integer statusCode(String code, io.swagger.v3.oas.models.Operation operation) {
@@ -269,80 +331,6 @@ public final class OpenApiReader {
         warnings.accept(what + " declares no JSON media type, only " + content.keySet()
                 + "; using " + only.getKey() + ", which the generated stub will still treat as JSON");
         return only.getValue();
-    }
-
-    // ── SCHEMAS ───────────────────────────────────────────────────────────────
-
-    private Map<String, ObjectSchema> schemas(Map<String, Schema> components) {
-        Map<String, ObjectSchema> schemas = new LinkedHashMap<>();
-        components.forEach((name, schema) -> {
-            if (schema.getProperties() == null) {
-                return;
-            }
-            List<String> required = schema.getRequired() == null ? List.of() : schema.getRequired();
-            List<Property> properties = new ArrayList<>();
-            schema.getProperties().forEach((propertyName, propertySchema) -> properties.add(
-                    new Property(String.valueOf(propertyName),
-                            typeOf((Schema<?>) propertySchema, components),
-                            required.contains(String.valueOf(propertyName)))));
-            schemas.put(name, new ObjectSchema(name, properties));
-        });
-        return schemas;
-    }
-
-    /**
-     * Turns a schema into a type reference, resolving {@code $ref} ourselves.
-     *
-     * <p>swagger-parser does not inline references, not even with
-     * {@code setResolve(true)} — verified against the parser. A property pointing at
-     * another schema arrives with a null type and a bare {@code $ref} string, so
-     * following it is our job, and so is stopping: this method resolves one step and
-     * records the name, never descending. Cycles are therefore not this method's problem,
-     * which is why the fixture's three kinds of recursion do not hang it.
-     */
-    private TypeRef typeOf(Schema<?> schema, Map<String, Schema> components) {
-        if (schema == null) {
-            return TypeRef.unknown();
-        }
-        if (schema.get$ref() != null) {
-            String name = referencedName(schema.get$ref());
-            if (name == null) {
-                warnings.accept("Ignoring the unsupported reference " + schema.get$ref());
-                return TypeRef.unknown();
-            }
-            Schema<?> referenced = components.get(name);
-            return referenced != null && referenced.getEnum() != null
-                    ? TypeRef.enumeration(name)
-                    : TypeRef.object(name);
-        }
-        if ("array".equals(schema.getType()) || schema.getItems() != null) {
-            return TypeRef.array(typeOf(schema.getItems(), components));
-        }
-        if (schema.getAdditionalProperties() instanceof Schema<?> values) {
-            return TypeRef.map(typeOf(values, components));
-        }
-        if (schema.getProperties() != null) {
-            // An object written inline rather than referenced. openapi-generator invents
-            // a name for it; we would have to invent the same one to reference the model
-            // it generates, and inventing it separately is how the two drift apart.
-            warnings.accept("Ignoring an inline object schema; only referenced schemas are supported");
-            return TypeRef.unknown();
-        }
-        if (schema.getType() == null) {
-            return TypeRef.unknown();
-        }
-        // An enum declared inline in a parameter is deliberately read as its base type.
-        // No Java client library generates a type for one, so inventing a type here would
-        // make the stub the only place that has it — see the note on enums in the plan.
-        return TypeRef.primitive(schema.getType(), schema.getFormat());
-    }
-
-    private String referencedName(String ref) {
-        int lastSlash = ref.lastIndexOf('/');
-        if (!ref.startsWith("#/components/schemas/") && !ref.startsWith("#/definitions/")) {
-            return null;
-        }
-        return ref.substring(lastSlash + 1);
     }
 
     // ── NAMES ─────────────────────────────────────────────────────────────────

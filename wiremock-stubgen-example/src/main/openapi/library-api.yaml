@@ -4,11 +4,16 @@ openapi: 3.0.3
 #
 # Deliberately unlike the fixture in src/main/resources/specs of the fixtures
 # module: that one is a pile of awkward cases and reads like a test. This one is
-# meant to be read. It is small, it is plausible, and between its three
+# meant to be read. It is small, it is plausible, and between its four
 # operations it reaches every shape a generated stub can take -- a path
 # parameter, query parameters, a response body deep enough to need a builder, a
 # list of objects inside that body, an error code with a schema of its own, and
 # a request body to match on.
+#
+# It is also written the way large specifications are written, because those are
+# the shapes that broke first: a shared error response referred to from several
+# operations, a resource composed with allOf, and a body written out in place
+# instead of being declared.
 
 info:
   title: Library API
@@ -37,12 +42,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Book'
+        # Written once under components and pointed at from every operation that
+        # can fail this way, which is how a specification of any size avoids
+        # repeating its error bodies.
         404:
-          description: No book with that identifier.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Problem'
+          $ref: '#/components/responses/NotFound'
 
   /books:
     get:
@@ -85,13 +89,60 @@ paths:
               schema:
                 $ref: '#/components/schemas/Loan'
         409:
-          description: The book is already on loan.
+          $ref: '#/components/responses/Conflict'
+
+  /loans/{loanId}:
+    delete:
+      operationId: returnLoan
+      tags: [ loans ]
+      summary: Give a borrowed book back.
+      parameters:
+        - name: loanId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: What the return cost.
+          # Written out here rather than declared. The model generator invents a
+          # class for it and names it after where it sits, and the stub has to
+          # use that same name or it refers to nothing.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Problem'
+                type: object
+                properties:
+                  returnedAt:
+                    type: string
+                  lateFee:
+                    type: object
+                    properties:
+                      amount:
+                        type: number
+                      currency:
+                        type: string
+        404:
+          $ref: '#/components/responses/NotFound'
 
 components:
+
+  responses:
+
+    NotFound:
+      description: Nothing here by that identifier.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+    Conflict:
+      description: The book is already on loan.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
   schemas:
 
     Book:
@@ -145,14 +196,25 @@ components:
         email:
           type: string
 
+    # Composed rather than written out. openapi-generator flattens this into one
+    # class holding every member's properties -- there is no inheritance in the
+    # models -- so the stub offers one flat set of accessors over both.
     Loan:
+      allOf:
+        - $ref: '#/components/schemas/Reference'
+        - type: object
+          properties:
+            book:
+              $ref: '#/components/schemas/Book'
+            dueDate:
+              type: string
+
+    Reference:
       type: object
       properties:
         id:
           type: string
-        book:
-          $ref: '#/components/schemas/Book'
-        dueDate:
+        href:
           type: string
 
     Problem:

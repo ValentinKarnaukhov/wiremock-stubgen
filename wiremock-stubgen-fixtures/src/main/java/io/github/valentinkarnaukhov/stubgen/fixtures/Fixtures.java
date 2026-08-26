@@ -32,11 +32,28 @@ public final class Fixtures {
         return SampleApi.PATH;
     }
 
+    /**
+     * The specification for the rules a reader has to follow when a document is written
+     * the way large real ones are: compositions, schemas shared by reference, bodies
+     * written out in place, names given to things that are not classes.
+     *
+     * <p>Separate from {@link #sampleApi()} because that one is the source of the golden
+     * stubs, and a fixture the goldens are pinned to should not grow every time a new rule
+     * needs covering.
+     */
+    public static Path compositionApi() {
+        return CompositionApi.PATH;
+    }
+
     private Fixtures() {
     }
 
     private static final class SampleApi {
         private static final Path PATH = materialise("/specs/sample-api.yaml", "sample-api", ".yaml");
+    }
+
+    private static final class CompositionApi {
+        private static final Path PATH = materialise("/specs/composition-api.yaml", "composition-api", ".yaml");
     }
 
     private static Path materialise(String resource, String prefix, String suffix) {
