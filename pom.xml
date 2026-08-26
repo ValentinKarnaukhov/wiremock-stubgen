@@ -44,7 +44,7 @@
 
     <modules>
         <module>wiremock-stubgen-core</module>
-        <module>wiremock-stubgen-lang-java</module>
+        <module>wiremock-stubgen-codegen-java</module>
         <module>wiremock-stubgen-runtime-java</module>
         <module>wiremock-stubgen-maven-plugin</module>
         <module>wiremock-stubgen-it</module>
@@ -88,7 +88,7 @@
             </dependency>
             <dependency>
                 <groupId>io.github.valentinkarnaukhov</groupId>
-                <artifactId>wiremock-stubgen-lang-java</artifactId>
+                <artifactId>wiremock-stubgen-codegen-java</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -30,7 +30,7 @@
         </dependency>
         <dependency>
             <groupId>io.github.valentinkarnaukhov</groupId>
-            <artifactId>wiremock-stubgen-lang-java</artifactId>
+            <artifactId>wiremock-stubgen-codegen-java</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

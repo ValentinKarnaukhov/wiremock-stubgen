@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.valentinkarnaukhov</groupId>
+        <artifactId>wiremock-stubgen-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>wiremock-stubgen-codegen-java</artifactId>
+    <name>wiremock-stubgen-codegen-java</name>
+    <description>
+        Java language target: maps the language-neutral description onto Java types and emits
+        WireMock stub builder sources. Discovered via ServiceLoader.
+
+        Runs at generate time only, and never appears on the classpath of the application the
+        stubs are generated for. That is wiremock-stubgen-runtime-java, which shares nothing
+        with this module but the word "java".
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.valentinkarnaukhov</groupId>
+            <artifactId>wiremock-stubgen-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.samskivert</groupId>
+            <artifactId>jmustache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.valentinkarnaukhov</groupId>
+            <artifactId>wiremock-stubgen-core</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

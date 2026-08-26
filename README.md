@@ -37,10 +37,15 @@ specification reader, the explode resolver and the emitter are being built.
 | Module | Purpose |
 |---|---|
 | `wiremock-stubgen-core` | Language-neutral: OpenAPI → a description of the API, plus the `LanguageTarget` contract |
-| `wiremock-stubgen-lang-java` | Java target: type mapping and source emission |
-| `wiremock-stubgen-runtime-java` | Hand-written runtime the generated Java code builds on |
+| `wiremock-stubgen-codegen-java` | Java target: type mapping and source emission. Runs at generate time only |
+| `wiremock-stubgen-runtime-java` | Hand-written runtime the generated Java code builds on. Ships to the consumer |
 | `wiremock-stubgen-maven-plugin` | Maven delivery |
 | `wiremock-stubgen-it` | Integration tests: generate, compile, run against WireMock |
+
+The two `-java` modules share nothing but the word. `codegen-java` reads specifications
+and writes source; it never reaches the consumer's classpath. `runtime-java` is what
+generated code compiles against, so it is a published API with a compatibility
+obligation, and it depends on nothing but WireMock.
 
 Language targets are discovered with `ServiceLoader`, so supporting another language
 means adding a module — the core and the build-tool plugins stay untouched. Gradle

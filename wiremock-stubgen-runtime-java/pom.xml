@@ -15,6 +15,10 @@
     <description>
         Hand-written runtime support for generated Java stub builders. Lives on the
         consumer's test classpath, so generated sources stay thin.
+
+        This is a published API: generated code -- and therefore the consumer's own code --
+        compiles against these classes, so they carry a compatibility obligation the
+        generator itself does not. Nothing that only matters at generate time belongs here.
     </description>
 
     <dependencies>
