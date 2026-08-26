@@ -79,6 +79,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/Enums'
 
+  /readonly:
+    get:
+      operationId: getReadOnly
+      tags: [composition]
+      responses:
+        '200':
+          description: Properties a server sends and a client never submits.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadOnlyHolder'
 
 components:
 
@@ -191,6 +202,27 @@ components:
     NamedEnum:
       type: string
       enum: [N1, N2]
+
+    ReadOnlyHolder:
+      type: object
+      properties:
+        plain:
+          type: string
+        frozen:
+          type: string
+          readOnly: true
+        # readOnly said once, on the schema, and inherited by everything pointing at it.
+        viaRef:
+          $ref: '#/components/schemas/FrozenAlias'
+        # readOnly hung on a composition wrapping a single reference.
+        frozenObject:
+          allOf:
+            - $ref: '#/components/schemas/Identified'
+          readOnly: true
+
+    FrozenAlias:
+      type: string
+      readOnly: true
 
     Problem:
       type: object

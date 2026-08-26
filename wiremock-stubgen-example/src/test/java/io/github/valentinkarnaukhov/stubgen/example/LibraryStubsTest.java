@@ -199,20 +199,29 @@ class LibraryStubsTest {
     }
 
     /**
-     * An enum written inside the schema that uses it. The model nests it, so the stub
-     * names it the same way, and the compiler is what checks the value is a legal one.
+     * The shapes a large specification is written in, all reached through the same
+     * accessors as everything else.
+     *
+     * <p>Each one of these was a stub that did not compile, or a body that silently went
+     * out empty, and none of them was visible from the generated source alone — which is
+     * why the check is here, where the stub meets models the model generator really wrote.
      */
     @Test
-    void servesAStatusFromAnEnumWrittenInsideTheSchema() throws Exception {
+    void servesTheShapesLargeSpecificationsAreWrittenIn() throws Exception {
         new GetBookStub(target)
                 .pathBookId("978-0134685991")
                 .code200()
                     .title("Effective Java")
                     // Written inside Book, so the model nests it and the stub says so too.
                     .status(Book.StatusEnum.ON_LOAN)
+                    // Read-only: the model has a getter and no setter, and a stub playing
+                    // the server still has to be able to send it.
+                    .addedAt("2019-01-06")
                 .mock();
 
-        assertThat(json(get("/books/978-0134685991")).at("/status").asText()).isEqualTo("ON_LOAN");
+        JsonNode book = json(get("/books/978-0134685991"));
+        assertThat(book.at("/status").asText()).isEqualTo("ON_LOAN");
+        assertThat(book.at("/addedAt").asText()).isEqualTo("2019-01-06");
     }
 
     /**

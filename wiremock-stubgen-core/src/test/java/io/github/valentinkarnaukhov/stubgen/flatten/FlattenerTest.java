@@ -267,7 +267,7 @@ class FlattenerTest {
     }
 
     private static Property property(String name, TypeRef type) {
-        return new Property(name, type, false);
+        return new Property(name, type, false, false);
     }
 
     private static ObjectSchema schema(String name, Property... properties) {

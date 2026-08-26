@@ -23,8 +23,12 @@ import java.util.Optional;
  *                     is what the signature is built from on both sides
  * @param targetSchema for {@link Kind#NESTED_LIST} the schema of the elements, otherwise
  *                     {@code null}
+ * @param readOnly     whether the property this ends at is read-only, carried from
+ *                     {@link io.github.valentinkarnaukhov.stubgen.spec.Property} because
+ *                     only the last hop of the path decides how the value is written
  */
-public record Accessor(Kind kind, String name, List<String> path, TypeRef type, String targetSchema) {
+public record Accessor(Kind kind, String name, List<String> path, TypeRef type, String targetSchema,
+                       boolean readOnly) {
 
     public enum Kind {
         /** A single value: primitive, enum, map, or an object whose schema is not in the catalogue. */

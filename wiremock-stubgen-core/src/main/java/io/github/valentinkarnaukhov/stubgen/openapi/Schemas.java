@@ -238,8 +238,31 @@ final class Schemas {
                 typeOf(propertySchema,
                         Identifiers.pascalJoin(name, propertyName),
                         name + "." + Identifiers.pascalJoin(propertyName) + "Enum"),
-                merged.required.contains(propertyName))));
+                merged.required.contains(propertyName),
+                readOnly(propertySchema, new LinkedHashSet<>()))));
         resolved.put(name, new ObjectSchema(name, properties));
+    }
+
+    /**
+     * Whether only a server ever sends this property.
+     *
+     * <p>Follows references, because a specification may say it once by naming a schema
+     * {@code readOnly} and then pointing several properties at it. openapi-generator honours
+     * that — verified on 7.24.0, where a property referring to a read-only schema lost its
+     * setter exactly as an inline one does — and a stub that missed it would not compile.
+     */
+    private boolean readOnly(Schema<?> schema, Set<String> visiting) {
+        if (schema == null) {
+            return false;
+        }
+        if (Boolean.TRUE.equals(schema.getReadOnly())) {
+            return true;
+        }
+        if (schema.get$ref() == null) {
+            return false;
+        }
+        String name = referencedName(schema.get$ref());
+        return name != null && visiting.add(name) && readOnly(declared.get(name), visiting);
     }
 
     /**

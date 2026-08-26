@@ -13,8 +13,8 @@ openapi: 3.0.3
 # It is also written the way large specifications are written, because those are
 # the shapes that broke first: a shared error response referred to from several
 # operations, a resource composed with allOf, a status enum written inside the
-# schema that uses it, and a body written out in place instead of being
-# declared.
+# schema that uses it, a property only the server ever sends, and a body written
+# out in place instead of being declared.
 
 info:
   title: Library API
@@ -164,6 +164,12 @@ components:
         status:
           type: string
           enum: [ AVAILABLE, ON_LOAN, LOST ]
+        # The library sets this; nobody submits it. A read-only property gets a
+        # getter and no setter, and a stub playing the server still has to be
+        # able to send one.
+        addedAt:
+          type: string
+          readOnly: true
 
     Author:
       type: object

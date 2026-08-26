@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * that generator writes, so a rule this reader gets wrong does not produce a worse stub,
  * it produces one that does not compile.
  *
- * <p>They arrived together, after a real specification of 93 schemas and 23
+ * <p>All six rules arrived together, after a real specification of 93 schemas and 23
  * operations read as <em>zero</em> usable schemas without a single warning.
  */
 class OpenApiCompositionTest {
@@ -40,7 +40,7 @@ class OpenApiCompositionTest {
 
     @Test
     void readsTheWholeDocumentWithoutComplaining() {
-        assertThat(api.operations()).hasSize(4);
+        assertThat(api.operations()).hasSize(5);
         assertThat(warnings).isEmpty();
     }
 
@@ -157,6 +157,28 @@ class OpenApiCompositionTest {
         assertThat(named.kind()).isEqualTo(TypeRef.Kind.ENUM);
         assertThat(named.schemaName()).isEqualTo("NamedEnum");
         assertThat(named.declaringSchema()).isNull();
+    }
+
+    // ── readOnly ──────────────────────────────────────────────────────────────
+
+    @Test
+    void marksAPropertyTheModelWillHaveNoSetterFor() {
+        assertThat(property("ReadOnlyHolder", "plain").readOnly()).isFalse();
+        assertThat(property("ReadOnlyHolder", "frozen").readOnly()).isTrue();
+    }
+
+    @Test
+    void inheritsReadOnlyThroughAReference() {
+        // Said once on the schema and true of everything pointing at it, which is how the
+        // real specification wrote it.
+        assertThat(property("ReadOnlyHolder", "viaRef").readOnly()).isTrue();
+    }
+
+    @Test
+    void inheritsReadOnlyFromACompositionWrapper() {
+        Property frozen = property("ReadOnlyHolder", "frozenObject");
+        assertThat(frozen.readOnly()).isTrue();
+        assertThat(frozen.type().schemaName()).isEqualTo("Identified");
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

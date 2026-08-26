@@ -116,6 +116,9 @@ record StubView(
      *                 under its own type
      * @param receiver the expression a value is written to — the body field, the current
      *                 element, or a call to the holder that owns the property
+     * @param readOnly whether the model has no setter for this property, so it has to be
+     *                 written through {@code writer} instead
+     * @param writer   the runtime helper that writes a read-only property, or {@code null}
      */
     record BuilderAccessor(
             String owner,
@@ -126,7 +129,9 @@ record StubView(
             String property,
             String getter,
             Local local,
-            String receiver) {
+            String receiver,
+            boolean readOnly,
+            String writer) {
     }
 
     record BuilderHolder(
@@ -135,7 +140,9 @@ record StubView(
             String property,
             String getter,
             Local local,
-            String receiver) {
+            String receiver,
+            boolean readOnly,
+            String writer) {
     }
 
     /**

@@ -90,13 +90,15 @@ final class BodyEmitter {
             Creation creation = creationOf(scope, itemType, accessor.path());
             return new StubView.BuilderAccessor(
                     owner, accessor.name(), null, true, builderName(target),
-                    property, getter(accessor.path()), creation.local(), creation.receiver());
+                    property, getter(accessor.path()), creation.local(), creation.receiver(),
+                    accessor.readOnly(), writer(accessor.readOnly()));
         }
         String type = accessor.kind() == Accessor.Kind.VALUE_LIST
                 ? imports.use("java.util.List<" + valueType(accessor) + ">")
                 : imports.use(valueType(accessor));
         return new StubView.BuilderAccessor(
-                owner, accessor.name(), type, false, null, property, null, null, leafReceiver(scope, accessor));
+                owner, accessor.name(), type, false, null, property, null, null,
+                leafReceiver(scope, accessor), accessor.readOnly(), writer(accessor.readOnly()));
     }
 
     private StubView.BuilderHolder holder(BodyScope scope, String itemType, Intermediate intermediate) {
@@ -107,7 +109,17 @@ final class BodyEmitter {
                 property(intermediate.path()),
                 getter(intermediate.path()),
                 creation.local(),
-                creation.receiver());
+                creation.receiver(),
+                intermediate.readOnly(),
+                writer(intermediate.readOnly()));
+    }
+
+    /**
+     * The helper a read-only property is written through, imported only where one exists so
+     * that stubs over ordinary schemas keep exactly the imports they had.
+     */
+    private String writer(boolean readOnly) {
+        return readOnly ? imports.use(RUNTIME + "ReadOnlyProperties") : null;
     }
 
     /**

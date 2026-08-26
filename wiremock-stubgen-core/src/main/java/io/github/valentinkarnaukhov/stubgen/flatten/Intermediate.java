@@ -20,8 +20,11 @@ import java.util.Objects;
  *                   same way an accessor name is
  * @param path       the wire property names leading to it, from the scope's own schema
  * @param schemaName the schema of the object itself
+ * @param readOnly   whether the property holding this object is itself read-only. An
+ *                   object nobody can hand to its owner still has to be created and
+ *                   attached before anything inside it can be reached.
  */
-public record Intermediate(String name, List<String> path, String schemaName) {
+public record Intermediate(String name, List<String> path, String schemaName, boolean readOnly) {
 
     public Intermediate {
         Objects.requireNonNull(name, "name");

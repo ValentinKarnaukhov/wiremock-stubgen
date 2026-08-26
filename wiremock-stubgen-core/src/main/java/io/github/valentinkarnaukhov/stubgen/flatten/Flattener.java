@@ -143,12 +143,13 @@ public final class Flattener {
                 // Recorded before descending, so the list reads in the order a builder has
                 // to create them: an object always precedes what it contains.
                 intermediates.add(new Intermediate(
-                        Names.escape(Names.join(path), options.reservedNames()), path, nested.get().name()));
+                        Names.escape(Names.join(path), options.reservedNames()), path, nested.get().name(),
+                        property.readOnly()));
                 collect(nested.get(), path, byName, intermediates, scopeName);
                 continue;
             }
 
-            Accessor accessor = leafOrTransition(path, type);
+            Accessor accessor = leafOrTransition(path, type, property.readOnly());
             Accessor clash = byName.putIfAbsent(accessor.name(), accessor);
             if (clash != null) {
                 throw new FlatteningException(
@@ -160,17 +161,18 @@ public final class Flattener {
         }
     }
 
-    private Accessor leafOrTransition(List<String> path, TypeRef type) {
+    private Accessor leafOrTransition(List<String> path, TypeRef type, boolean readOnly) {
         String name = Names.escape(Names.join(path), options.reservedNames());
         if (type.kind() == TypeRef.Kind.ARRAY && type.items() != null) {
             TypeRef element = type.items();
             Optional<ObjectSchema> described = describedObject(element);
             if (described.isPresent()) {
-                return new Accessor(Accessor.Kind.NESTED_LIST, name, path, element, described.get().name());
+                return new Accessor(
+                        Accessor.Kind.NESTED_LIST, name, path, element, described.get().name(), readOnly);
             }
-            return new Accessor(Accessor.Kind.VALUE_LIST, name, path, element, null);
+            return new Accessor(Accessor.Kind.VALUE_LIST, name, path, element, null, readOnly);
         }
-        return new Accessor(Accessor.Kind.VALUE, name, path, type, null);
+        return new Accessor(Accessor.Kind.VALUE, name, path, type, null, readOnly);
     }
 
     /**

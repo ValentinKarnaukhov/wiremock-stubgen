@@ -33,7 +33,12 @@
             {{localType}} {{localName}} = {{localInit}};
     {{/local}}
             if ({{receiver}}.{{getter}}() == null) {
+    {{#readOnly}}
+                {{writer}}.set({{receiver}}, "{{property}}", new ArrayList<>());
+    {{/readOnly}}
+    {{^readOnly}}
                 {{receiver}}.{{property}}(new ArrayList<>());
+    {{/readOnly}}
             }
             return new {{targetBuilder}}<>(this, {{receiver}}.{{getter}}());
         }
@@ -41,7 +46,12 @@
     {{^nested}}
 
         public {{owner}}<P> {{name}}({{type}} value) {
+    {{#readOnly}}
+            {{writer}}.set({{receiver}}, "{{property}}", value);
+    {{/readOnly}}
+    {{^readOnly}}
             {{receiver}}.{{property}}(value);
+    {{/readOnly}}
             return this;
         }
     {{/nested}}
@@ -62,7 +72,12 @@
             {{localType}} {{localName}} = {{localInit}};
     {{/local}}
             if ({{receiver}}.{{getter}}() == null) {
+    {{#readOnly}}
+                {{writer}}.set({{receiver}}, "{{property}}", new {{holderType}}());
+    {{/readOnly}}
+    {{^readOnly}}
                 {{receiver}}.{{property}}(new {{holderType}}());
+    {{/readOnly}}
             }
             return {{receiver}}.{{getter}}();
         }
