@@ -71,6 +71,12 @@ paths:
           in: query
           schema:
             type: boolean
+        # A query parameter given an object schema. The name Page never reaches the
+        # wire: the client sends one parameter per property, so the stub must too.
+        - name: Page
+          in: query
+          schema:
+            $ref: '#/components/schemas/PageRequest'
       responses:
         200:
           description: The books that matched.
@@ -179,6 +185,19 @@ components:
             $ref: '#/components/schemas/Problem'
 
   schemas:
+
+    # Sent as one query parameter in the specification and as three on the wire.
+    PageRequest:
+      type: object
+      properties:
+        offset:
+          type: integer
+          format: int64
+        size:
+          type: integer
+        sortBy:
+          type: string
+          enum: [TITLE, YEAR]
 
     Book:
       type: object

@@ -271,6 +271,53 @@ final class Schemas {
         return objectName == null ? null : objectName + "Inner";
     }
 
+    /**
+     * The properties a parameter written as an object contributes to the query string.
+     *
+     * <p>A query parameter may be given an object schema to group several values under one
+     * name. The name is a grouping in the specification only: openapi-generator gives the
+     * client method a parameter of the wrapper type and then writes one query parameter per
+     * property, so nothing named after the wrapper is ever sent. A stub that matched on the
+     * wrapper name would wait for a parameter no client sends.
+     *
+     * <p>Only the schema's own properties are expanded. A composition has none of its own,
+     * and the generator leaves such a parameter whole.
+     *
+     * @return the properties to expand into, or empty where there is nothing to expand
+     */
+    List<Property> queryProperties(Schema<?> schema) {
+        Schema<?> target = schema;
+        String name = null;
+        Set<String> visiting = new LinkedHashSet<>();
+        while (target != null && target.get$ref() != null) {
+            name = referencedName(target.get$ref());
+            if (name == null || !visiting.add(name)) {
+                return List.of();
+            }
+            target = declared.get(name);
+        }
+        if (target == null
+                || target.getAllOf() != null
+                || target.getOneOf() != null
+                || target.getAnyOf() != null
+                || target.getProperties() == null
+                || target.getProperties().isEmpty()) {
+            return List.of();
+        }
+        if (name != null) {
+            // Resolved as a whole so that the properties carry the same types the model
+            // class does — an inline enum among them is named after the model, and the
+            // client's getter returns exactly that.
+            register(name, target);
+            ObjectSchema object = resolved.get(name);
+            return object == null ? List.of() : object.properties();
+        }
+        List<Property> properties = new ArrayList<>();
+        target.getProperties().forEach((propertyName, property) ->
+                properties.add(new Property(propertyName, typeOf(property, null, null), false)));
+        return List.copyOf(properties);
+    }
+
     // ── REGISTRATION ──────────────────────────────────────────────────────────
 
     private void register(String name, Schema<?> schema) {

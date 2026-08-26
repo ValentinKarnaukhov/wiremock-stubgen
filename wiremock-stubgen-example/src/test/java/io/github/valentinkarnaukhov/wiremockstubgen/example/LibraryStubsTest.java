@@ -1,6 +1,7 @@
 package io.github.valentinkarnaukhov.wiremockstubgen.example;
 
 import com.example.library.model.Book;
+import com.example.library.model.PageRequest;
 import com.example.library.stubs.books.GetBookStub;
 import com.example.library.stubs.books.SearchBooksStub;
 import com.example.library.stubs.loans.BorrowBookStub;
@@ -141,6 +142,33 @@ class LibraryStubsTest {
 
         assertThat(get("/books?author=Someone%20Else&availableOnly=true").statusCode())
                 .isEqualTo(404);
+    }
+
+    /**
+     * A query parameter written as an object is matched property by property, because a
+     * client sends one parameter per property and nothing named after the object. The
+     * generated client is what proves it: {@code searchBooks} takes a {@code PageRequest}
+     * and puts {@code offset}, {@code size} and {@code sortBy} on the wire.
+     */
+    @Test
+    void matchesAnObjectQueryParameterAsTheParametersActuallySent() throws Exception {
+        new SearchBooksStub(target)
+                .queryOffset(20L)
+                .querySize(10)
+                .querySortBy(PageRequest.SortByEnum.YEAR)
+                .code200()
+                    .total(1)
+                    .books()
+                        .addNew().title("Release It!")
+                .mock();
+
+        HttpResponse<String> matching = get("/books?offset=20&size=10&sortBy=YEAR");
+        assertThat(matching.statusCode()).isEqualTo(200);
+        assertThat(json(matching).at("/books/0/title").asText()).isEqualTo("Release It!");
+
+        assertThat(get("/books?offset=40&size=10&sortBy=YEAR").statusCode()).isEqualTo(404);
+        // Nothing called Page is ever sent, so nothing may be waiting for it.
+        assertThat(get("/books?Page=whatever").statusCode()).isEqualTo(404);
     }
 
     /**

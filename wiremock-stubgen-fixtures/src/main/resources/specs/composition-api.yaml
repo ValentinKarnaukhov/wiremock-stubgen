@@ -30,6 +30,41 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
+  /grouped:
+    get:
+      operationId: getGrouped
+      tags: [composition]
+      # A query parameter given an object schema groups several values under one name in
+      # the specification only. openapi-generator sends one query parameter per property
+      # and never sends anything called Filter, so that is what a stub must match on.
+      parameters:
+        - name: Filter
+          in: query
+          schema:
+            $ref: '#/components/schemas/Filter'
+        # A composition has no properties of its own, and the generator leaves such a
+        # parameter whole rather than expanding it.
+        - name: Composed
+          in: query
+          schema:
+            $ref: '#/components/schemas/Composed'
+        # Written out in place rather than declared, and expanded just the same.
+        - name: Inline
+          in: query
+          schema:
+            type: object
+            properties:
+              written:
+                type: string
+        # An object outside the query string is not expanded: it travels whole.
+        - name: Header
+          in: header
+          schema:
+            $ref: '#/components/schemas/Filter'
+      responses:
+        '200':
+          description: Accepted.
+
   /inline:
     post:
       operationId: postInline
@@ -166,6 +201,20 @@ components:
             $ref: '#/components/schemas/Problem'
 
   schemas:
+
+    # A query parameter written as an object. Its properties are what a client puts on
+    # the wire; the name Filter is not sent at all.
+    Filter:
+      type: object
+      properties:
+        term:
+          type: string
+        limit:
+          type: integer
+          format: int64
+        kind:
+          type: string
+          enum: [FAST, SLOW]
 
     # allOf produces one flat class holding every member's properties in member order,
     # with no inheritance. A member may be a composition itself.

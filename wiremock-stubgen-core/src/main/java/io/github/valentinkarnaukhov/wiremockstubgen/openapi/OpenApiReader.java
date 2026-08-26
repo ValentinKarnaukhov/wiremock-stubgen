@@ -5,6 +5,7 @@ import io.github.valentinkarnaukhov.wiremockstubgen.spec.HttpMethod;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.Operation;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.Parameter;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.ParameterLocation;
+import io.github.valentinkarnaukhov.wiremockstubgen.spec.Property;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.Response;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.StubApi;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.TypeRef;
@@ -183,6 +184,9 @@ public final class OpenApiReader {
      * Parameters declared on the operation, plus those declared once on the path item.
      * An operation may restate a shared parameter, and then its own declaration wins:
      * concatenating the two lists would emit the parameter twice.
+     *
+     * <p>A query parameter written as an object is expanded into its properties. See
+     * {@link Schemas#queryProperties}.
      */
     private List<Parameter> parameters(io.swagger.v3.oas.models.Operation operation,
                                        PathItem pathItem, Components components, Schemas schemas) {
@@ -205,6 +209,16 @@ public final class OpenApiReader {
             if (location == null) {
                 warnings.accept("Ignoring parameter " + parameter.getName()
                         + " declared in an unsupported location " + parameter.getIn());
+                continue;
+            }
+            List<Property> grouped = location == ParameterLocation.QUERY
+                    ? schemas.queryProperties(parameter.getSchema())
+                    : List.of();
+            if (!grouped.isEmpty()) {
+                for (Property property : grouped) {
+                    byIdentity.put(location + " " + property.name(),
+                            new Parameter(property.name(), location, property.type()));
+                }
                 continue;
             }
             byIdentity.put(location + " " + parameter.getName(), new Parameter(

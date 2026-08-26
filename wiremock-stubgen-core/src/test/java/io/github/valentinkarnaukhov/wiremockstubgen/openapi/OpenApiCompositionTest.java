@@ -36,7 +36,7 @@ class OpenApiCompositionTest {
 
     @Test
     void readsTheWholeDocumentComplainingOnlyWhereItShould() {
-        assertThat(api.operations()).hasSize(8);
+        assertThat(api.operations()).hasSize(9);
         // The one thing here that genuinely describes no shape is the anyOf of scalars.
         assertThat(warnings).singleElement().asString()
                 .contains("Any", "resolved to no properties at all");
@@ -328,8 +328,41 @@ class OpenApiCompositionTest {
                 .isEqualTo(TypeRef.Kind.UNKNOWN);
     }
 
-    private static List<String> properties(String schema) {
-        return schema(schema).properties().stream().map(Property::name).toList();
+    /**
+     * A query parameter given an object schema is a grouping in the specification, not on
+     * the wire: the client sends one parameter per property and nothing named after the
+     * object. A stub that took the object at its word would wait for a parameter that is
+     * never sent, and no request would ever match it.
+     */
+    @Test
+    void expandsAnObjectQueryParameterIntoTheParametersActuallySent() {
+        List<Parameter> query = operation("getGrouped").parametersIn(ParameterLocation.QUERY);
+
+        assertThat(query).extracting(Parameter::name)
+                .containsExactly("term", "limit", "kind", "Composed", "written")
+                .doesNotContain("Filter", "Inline");
+        // The properties keep the types the model class gives them, so an inline enum is
+        // still the enum the generator nested in the model rather than a bare string.
+        assertThat(query).extracting(Parameter::type).containsExactly(
+                TypeRef.primitive("string", null),
+                TypeRef.primitive("integer", "int64"),
+                TypeRef.nestedEnumeration("Filter", "KindEnum"),
+                TypeRef.object("Composed"),
+                TypeRef.primitive("string", null));
+    }
+
+    /**
+     * Only a query parameter is expanded. An object sent as a header travels whole, so a
+     * stub expanding it would match on headers the client never sets.
+     */
+    @Test
+    void leavesAnObjectOutsideTheQueryStringWhole() {
+        assertThat(operation("getGrouped").parametersIn(ParameterLocation.HEADER))
+                .extracting(Parameter::name)
+                .containsExactly("Header");
+    }
+
+    private static List<String> properties(String schema) {        return schema(schema).properties().stream().map(Property::name).toList();
     }
 
     private static Property property(String schema, String name) {
