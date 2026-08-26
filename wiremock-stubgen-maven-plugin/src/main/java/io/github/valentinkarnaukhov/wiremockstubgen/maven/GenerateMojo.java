@@ -35,9 +35,12 @@ public class GenerateMojo extends AbstractMojo {
     @Parameter(property = "wiremock-stubgen.language", defaultValue = "java")
     private String language;
 
-    /** Package (or namespace) for the generated stubs. */
-    @Parameter(property = "wiremock-stubgen.packageName", defaultValue = "io.github.valentinkarnaukhov.wiremockstubgen.generated")
-    private String packageName;
+    /**
+     * Package (or namespace) for the generated stubs. Named the way openapi-generator
+     * names its own destinations, next to which this one is configured.
+     */
+    @Parameter(property = "wiremock-stubgen.stubPackage", defaultValue = "io.github.valentinkarnaukhov.wiremockstubgen.generated")
+    private String stubPackage;
 
     /** Where generated sources are written. */
     @Parameter(property = "wiremock-stubgen.outputDirectory",
@@ -48,7 +51,7 @@ public class GenerateMojo extends AbstractMojo {
     @Parameter(property = "wiremock-stubgen.modelPackage")
     private String modelPackage;
 
-    /** How generated stubs are laid out under {@code packageName}: TAG or NONE. */
+    /** How generated stubs are laid out under {@code stubPackage}: TAG or NONE. */
     @Parameter(property = "wiremock-stubgen.grouping", defaultValue = "TAG")
     private Grouping grouping;
 
@@ -96,7 +99,7 @@ public class GenerateMojo extends AbstractMojo {
             throw new MojoExecutionException(e.getMessage(), e);
         }
 
-        TargetOptions targetOptions = TargetOptions.builder(packageName)
+        TargetOptions targetOptions = TargetOptions.builder(stubPackage)
                 .modelPackage(modelPackage)
                 .grouping(grouping)
                 .explode(explode)

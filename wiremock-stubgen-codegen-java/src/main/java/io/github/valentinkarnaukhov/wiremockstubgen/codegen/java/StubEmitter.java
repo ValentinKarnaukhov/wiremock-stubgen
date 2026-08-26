@@ -332,8 +332,8 @@ final class StubEmitter {
 
     private String packageOf(Operation operation) {
         if (options.grouping() == Grouping.NONE) {
-            return options.packageName();
+            return options.stubPackage();
         }
-        return options.packageName() + "." + Identifiers.flatLowerCase(operation.tag());
+        return options.stubPackage() + "." + Identifiers.flatLowerCase(operation.tag());
     }
 }

@@ -12,15 +12,15 @@ import java.util.Optional;
  * <p>Common settings are explicit fields; anything target-specific goes into
  * {@link #options()} so that adding a new language does not require changing the core.
  *
- * @param packageName  target package or namespace for generated stubs
+ * @param stubPackage  target package or namespace for the generated stubs
  * @param modelPackage where the consumer's own model classes live, or {@code null}
- * @param grouping     how stubs are laid out under {@code packageName}
+ * @param grouping     how stubs are laid out under {@code stubPackage}
  * @param explode      whether bodies are described field by field as well as whole
  * @param maxDepth     how many property hops a body scope may flatten through
  * @param options      target-specific settings
  */
 public record TargetOptions(
-        String packageName,
+        String stubPackage,
         String modelPackage,
         Grouping grouping,
         boolean explode,
@@ -28,7 +28,7 @@ public record TargetOptions(
         Map<String, String> options) {
 
     public TargetOptions {
-        Objects.requireNonNull(packageName, "packageName");
+        Objects.requireNonNull(stubPackage, "stubPackage");
         Objects.requireNonNull(grouping, "grouping");
         options = Map.copyOf(Objects.requireNonNull(options, "options"));
         if (maxDepth < 1) {
@@ -36,8 +36,8 @@ public record TargetOptions(
         }
     }
 
-    public static Builder builder(String packageName) {
-        return new Builder(packageName);
+    public static Builder builder(String stubPackage) {
+        return new Builder(stubPackage);
     }
 
     public Optional<String> option(String key) {
@@ -76,15 +76,15 @@ public record TargetOptions(
     }
 
     public static final class Builder {
-        private final String packageName;
+        private final String stubPackage;
         private String modelPackage;
         private Grouping grouping = Grouping.TAG;
         private boolean explode = true;
         private int maxDepth = FlatteningOptions.DEFAULT_MAX_DEPTH;
         private Map<String, String> options = Map.of();
 
-        private Builder(String packageName) {
-            this.packageName = packageName;
+        private Builder(String stubPackage) {
+            this.stubPackage = stubPackage;
         }
 
         public Builder explode(boolean explode) {
@@ -113,7 +113,7 @@ public record TargetOptions(
         }
 
         public TargetOptions build() {
-            return new TargetOptions(packageName, modelPackage, grouping, explode, maxDepth, options);
+            return new TargetOptions(stubPackage, modelPackage, grouping, explode, maxDepth, options);
         }
     }
 }

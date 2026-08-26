@@ -167,7 +167,7 @@
                         </goals>
                         <configuration>
                             <inputSpec>${spec}</inputSpec>
-                            <packageName>com.example.library.stubs</packageName>
+                            <stubPackage>com.example.library.stubs</stubPackage>
                             <modelPackage>${model.package}</modelPackage>
                         </configuration>
                     </execution>
@@ -182,7 +182,7 @@
                         </goals>
                         <configuration>
                             <inputSpec>${spec}</inputSpec>
-                            <packageName>com.example.library.opaque.stubs</packageName>
+                            <stubPackage>com.example.library.opaque.stubs</stubPackage>
                             <modelPackage>${opaque.model.package}</modelPackage>
                             <composition>OPAQUE</composition>
                         </configuration>

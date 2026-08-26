@@ -59,7 +59,7 @@ class GenerateMojoTest {
         });
         set("inputSpec", Fixtures.sampleApi().toString());
         set("language", "java");
-        set("packageName", "demo.stubs");
+        set("stubPackage", "demo.stubs");
         set("modelPackage", "demo.model");
         set("outputDirectory", output);
         set("grouping", Grouping.TAG);
