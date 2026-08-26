@@ -12,8 +12,9 @@ openapi: 3.0.3
 #
 # It is also written the way large specifications are written, because those are
 # the shapes that broke first: a shared error response referred to from several
-# operations, a resource composed with allOf, and a body written out in place
-# instead of being declared.
+# operations, a resource composed with allOf, a status enum written inside the
+# schema that uses it, and a body written out in place instead of being
+# declared.
 
 info:
   title: Library API
@@ -158,6 +159,11 @@ components:
           type: array
           items:
             type: string
+        # An enum written here rather than declared. The model generator nests it
+        # inside Book, so the stub says Book.StatusEnum.
+        status:
+          type: string
+          enum: [ AVAILABLE, ON_LOAN, LOST ]
 
     Author:
       type: object

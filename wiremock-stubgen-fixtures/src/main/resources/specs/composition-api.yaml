@@ -67,6 +67,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Aliases'
 
+  /enums:
+    get:
+      operationId: getEnums
+      tags: [composition]
+      responses:
+        '200':
+          description: Enums written inside a schema rather than declared.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enums'
+
 
 components:
 
@@ -154,6 +166,31 @@ components:
     Explored:
       type: boolean
       description: A named boolean. No class is generated for it.
+
+    Enums:
+      type: object
+      properties:
+        # Becomes the nested enum Enums.MethodEnum.
+        method:
+          type: string
+          enum: [GET, POST]
+        # The suffix is added blind, so this becomes Enums.StatusEnumEnum.
+        statusEnum:
+          type: string
+          enum: [OPEN, CLOSED]
+        # The element enum is named after the property, without Inner.
+        many:
+          type: array
+          items:
+            type: string
+            enum: [P, Q]
+        # A declared enum keeps its own name and is not nested.
+        named:
+          $ref: '#/components/schemas/NamedEnum'
+
+    NamedEnum:
+      type: string
+      enum: [N1, N2]
 
     Problem:
       type: object

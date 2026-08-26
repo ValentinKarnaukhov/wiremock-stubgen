@@ -199,6 +199,23 @@ class LibraryStubsTest {
     }
 
     /**
+     * An enum written inside the schema that uses it. The model nests it, so the stub
+     * names it the same way, and the compiler is what checks the value is a legal one.
+     */
+    @Test
+    void servesAStatusFromAnEnumWrittenInsideTheSchema() throws Exception {
+        new GetBookStub(target)
+                .pathBookId("978-0134685991")
+                .code200()
+                    .title("Effective Java")
+                    // Written inside Book, so the model nests it and the stub says so too.
+                    .status(Book.StatusEnum.ON_LOAN)
+                .mock();
+
+        assertThat(json(get("/books/978-0134685991")).at("/status").asText()).isEqualTo("ON_LOAN");
+    }
+
+    /**
      * A composed resource reads as one flat set of accessors, because the models have no
      * inheritance: openapi-generator merges every member of an allOf into one class.
      */

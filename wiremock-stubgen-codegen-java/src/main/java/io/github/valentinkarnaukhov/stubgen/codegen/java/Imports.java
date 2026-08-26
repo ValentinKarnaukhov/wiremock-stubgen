@@ -28,6 +28,11 @@ final class Imports {
      *
      * <p>Understands generics, so {@code java.util.List<com.example.Body>} imports both and
      * comes back as {@code List<Body>}.
+     *
+     * <p>A nested type is written with a dollar between the outer class and the member,
+     * as {@code com.example.Holder$MethodEnum}, and comes back as {@code Holder.MethodEnum}.
+     * A dollar rather than a dot because only the caller knows where the package ends, and
+     * guessing by capitalisation would be a convention standing in for a fact.
      */
     String use(String fullyQualified) {
         StringBuilder result = new StringBuilder();
@@ -51,6 +56,13 @@ final class Imports {
     }
 
     private String shorten(String type) {
+        int nested = type.indexOf('$');
+        if (nested >= 0) {
+            // The import names the outer class, never the member. Two schemas may each
+            // declare an enum called StatusEnum, and importing both by their own name
+            // would be ambiguous and not compile.
+            return shorten(type.substring(0, nested)) + "." + type.substring(nested + 1).replace('$', '.');
+        }
         if (type.isEmpty() || !type.contains(".")) {
             return type;
         }

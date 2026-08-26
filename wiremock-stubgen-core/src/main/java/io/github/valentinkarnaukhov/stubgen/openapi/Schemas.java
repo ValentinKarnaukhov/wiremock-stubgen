@@ -75,7 +75,19 @@ final class Schemas {
      *                 sensible name, in which case an inline object is reported and
      *                 dropped rather than named badly.
      */
-    TypeRef typeOf(Schema<?> schema, String objectName) {
+    TypeRef typeOf(Schema<?> schema, String nameHint) {
+        return typeOf(schema, nameHint, null);
+    }
+
+    /**
+     * @param objectName what an inline object here would be called
+     * @param enumName   what an inline enum here would be called, as
+     *                   {@code Owner.MemberEnum}. Unlike the object name this does not
+     *                   change as an array is entered: an enum written as the items of
+     *                   property {@code many} is called {@code ManyEnum}, not
+     *                   {@code ManyInnerEnum}.
+     */
+    private TypeRef typeOf(Schema<?> schema, String objectName, String enumName) {
         if (schema == null) {
             return TypeRef.unknown();
         }
@@ -83,10 +95,10 @@ final class Schemas {
             return referenced(schema.get$ref(), new LinkedHashSet<>());
         }
         if ("array".equals(schema.getType()) || schema.getItems() != null) {
-            return TypeRef.array(typeOf(schema.getItems(), element(objectName)));
+            return TypeRef.array(typeOf(schema.getItems(), element(objectName), enumName));
         }
         if (schema.getAdditionalProperties() instanceof Schema<?> values) {
-            return TypeRef.map(typeOf(values, objectName));
+            return TypeRef.map(typeOf(values, objectName, enumName));
         }
         if (schema.getProperties() != null || schema.getAllOf() != null) {
             // An allOf wrapping one reference and adding nothing of its own is not a type,
@@ -102,6 +114,11 @@ final class Schemas {
             }
             return inline(schema, objectName);
         }
+        if (schema.getEnum() != null && enumName != null) {
+            int separator = enumName.indexOf('.');
+            return TypeRef.nestedEnumeration(
+                    enumName.substring(0, separator), enumName.substring(separator + 1));
+        }
         if (schema.getOneOf() != null || schema.getAnyOf() != null) {
             warnings.accept(describe(objectName) + " is composed with oneOf or anyOf, which"
                     + " has no single shape; the stub will take the body whole and offer no"
@@ -113,9 +130,9 @@ final class Schemas {
             // passes it through as Object rather than writing a class for it.
             return TypeRef.unknown();
         }
-        // An enum declared inline in a parameter is deliberately read as its base type.
-        // No Java client library generates a type for one, so inventing a type here would
-        // make the stub the only place that has it — see the note on enums in the plan.
+        // An inline enum in a position that gives it no name — a parameter, or the whole
+        // body — is deliberately read as its base type. Nothing generates a class for one
+        // of those, so naming a type here would leave the stub the only place that has it.
         return TypeRef.primitive(schema.getType(), schema.getFormat());
     }
 
@@ -156,7 +173,7 @@ final class Schemas {
             }
             return referenced(target.get$ref(), visiting);
         }
-        return typeOf(target, null);
+        return typeOf(target, null, null);
     }
 
     private boolean hasShapeOfItsOwn(Schema<?> schema) {
@@ -218,7 +235,9 @@ final class Schemas {
         List<Property> properties = new ArrayList<>();
         merged.properties.forEach((propertyName, propertySchema) -> properties.add(new Property(
                 propertyName,
-                typeOf(propertySchema, Identifiers.pascalJoin(name, propertyName)),
+                typeOf(propertySchema,
+                        Identifiers.pascalJoin(name, propertyName),
+                        name + "." + Identifiers.pascalJoin(propertyName) + "Enum"),
                 merged.required.contains(propertyName))));
         resolved.put(name, new ObjectSchema(name, properties));
     }

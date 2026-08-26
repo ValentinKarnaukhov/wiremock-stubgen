@@ -24,8 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * that generator writes, so a rule this reader gets wrong does not produce a worse stub,
  * it produces one that does not compile.
  *
- * <p>They arrived together, after a real specification of 93 schemas and 23 operations
- * read as <em>zero</em> usable schemas without a single warning.
+ * <p>They arrived together, after a real specification of 93 schemas and 23
+ * operations read as <em>zero</em> usable schemas without a single warning.
  */
 class OpenApiCompositionTest {
 
@@ -40,7 +40,7 @@ class OpenApiCompositionTest {
 
     @Test
     void readsTheWholeDocumentWithoutComplaining() {
-        assertThat(api.operations()).hasSize(3);
+        assertThat(api.operations()).hasSize(4);
         assertThat(warnings).isEmpty();
     }
 
@@ -122,6 +122,41 @@ class OpenApiCompositionTest {
         // directly. It describes no new type and the generator writes no new class.
         assertThat(property("Aliases", "described").type().schemaName()).isEqualTo("Identified");
         assertThat(api.schemas()).doesNotContainKey("AliasesDescribed");
+    }
+
+    // ── enums ─────────────────────────────────────────────────────────────────
+
+    @Test
+    void namesAnInlineEnumAfterThePropertyItBelongsTo() {
+        TypeRef method = property("Enums", "method").type();
+        assertThat(method.kind()).isEqualTo(TypeRef.Kind.ENUM);
+        assertThat(method.declaringSchema()).isEqualTo("Enums");
+        assertThat(method.schemaName()).isEqualTo("MethodEnum");
+    }
+
+    @Test
+    void addsTheEnumSuffixBlindly() {
+        // statusEnum becomes StatusEnumEnum. Ugly, and what the generator does, which is
+        // the only thing that matters here.
+        assertThat(property("Enums", "statusEnum").type().schemaName()).isEqualTo("StatusEnumEnum");
+    }
+
+    @Test
+    void namesTheEnumInsideAnArrayAfterThePropertyAndNotTheElement() {
+        // ManyEnum, not ManyInnerEnum: entering an array renames an inline object but not
+        // an inline enum.
+        TypeRef many = property("Enums", "many").type();
+        assertThat(many.kind()).isEqualTo(TypeRef.Kind.ARRAY);
+        assertThat(many.items().schemaName()).isEqualTo("ManyEnum");
+        assertThat(many.items().declaringSchema()).isEqualTo("Enums");
+    }
+
+    @Test
+    void leavesADeclaredEnumWithItsOwnName() {
+        TypeRef named = property("Enums", "named").type();
+        assertThat(named.kind()).isEqualTo(TypeRef.Kind.ENUM);
+        assertThat(named.schemaName()).isEqualTo("NamedEnum");
+        assertThat(named.declaringSchema()).isNull();
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

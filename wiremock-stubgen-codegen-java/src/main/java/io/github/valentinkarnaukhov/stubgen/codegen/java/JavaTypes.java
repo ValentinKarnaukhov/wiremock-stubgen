@@ -32,7 +32,10 @@ final class JavaTypes {
     Optional<String> nameOf(TypeRef type) {
         return switch (type.kind()) {
             case PRIMITIVE -> Optional.of(primitive(type.openApiType(), type.format()));
-            case OBJECT, ENUM -> options.modelPackageIfPresent().map(pkg -> pkg + "." + type.schemaName());
+            case OBJECT -> options.modelPackageIfPresent().map(pkg -> pkg + "." + type.schemaName());
+            case ENUM -> options.modelPackageIfPresent().map(pkg -> type.declaringSchema() == null
+                    ? pkg + "." + type.schemaName()
+                    : pkg + "." + type.declaringSchema() + "$" + type.schemaName());
             case ARRAY -> nameOf(type.items()).map(item -> "java.util.List<" + item + ">");
             case MAP -> nameOf(type.items()).map(value -> "java.util.Map<java.lang.String, " + value + ">");
             case UNKNOWN -> Optional.of("java.lang.Object");
