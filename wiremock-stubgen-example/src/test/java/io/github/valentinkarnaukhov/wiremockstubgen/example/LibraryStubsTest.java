@@ -421,6 +421,8 @@ class LibraryStubsTest {
                     .chapters(List.of(List.of("Preface"), List.of("Tools", "Debugging")))
                     .coverUrl(URI.create("https://example.com/covers/978-0201616224.png"))
                     .publisherSite("https://example.com")
+                    .metadata(Map.of("shelf", "A3"))
+                    .annotation("out on loan")
                 .mock();
 
         JsonNode book = json(get("/books/978-0201616224"));
@@ -431,6 +433,8 @@ class LibraryStubsTest {
         assertThat(book.at("/coverUrl").asText())
                 .isEqualTo("https://example.com/covers/978-0201616224.png");
         assertThat(book.at("/publisherSite").asText()).isEqualTo("https://example.com");
+        assertThat(book.at("/metadata/shelf").asText()).isEqualTo("A3");
+        assertThat(book.at("/annotation").asText()).isEqualTo("out on loan");
     }
 
     /**

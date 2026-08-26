@@ -314,6 +314,20 @@ class OpenApiCompositionTest {
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
+    /**
+     * A free-form bag is a map, but only when it says so. Both spellings arrive as an
+     * object with no properties, and the only thing telling them apart is a boolean that
+     * is not a schema -- so a reader looking for a schema sees neither and calls both
+     * Object, which is right for one of them and does not compile for the other.
+     */
+    @Test
+    void readsABooleanAdditionalPropertiesAsAMapOfAnything() {
+        assertThat(property("Problem", "errorParams").type())
+                .isEqualTo(TypeRef.map(TypeRef.unknown()));
+        assertThat(property("Problem", "params").type().kind())
+                .isEqualTo(TypeRef.Kind.UNKNOWN);
+    }
+
     private static List<String> properties(String schema) {
         return schema(schema).properties().stream().map(Property::name).toList();
     }

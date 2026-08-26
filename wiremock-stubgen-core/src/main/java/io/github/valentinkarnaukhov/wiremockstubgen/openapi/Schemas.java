@@ -95,6 +95,13 @@ final class Schemas {
         if (schema.getAdditionalProperties() instanceof Schema<?> values) {
             return TypeRef.map(typeOf(values, objectName, enumName));
         }
+        // "additionalProperties: true" is a boolean, not a schema, and means a map whose
+        // values are anything. "false" is also a boolean and means the opposite, so the
+        // test has to name the value rather than the type. openapi-generator writes the
+        // first as Map<String, Object> and the second as a bare Object.
+        if (Boolean.TRUE.equals(schema.getAdditionalProperties())) {
+            return TypeRef.map(TypeRef.unknown());
+        }
         String alias = alternativeAlias(schema);
         if (alias != null) {
             return referenced(alias, new LinkedHashSet<>());

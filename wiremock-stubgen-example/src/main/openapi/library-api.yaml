@@ -227,6 +227,14 @@ components:
           type: object
           additionalProperties:
             type: integer
+        # additionalProperties written as a boolean rather than a schema. It is
+        # still a map, of anything; the neighbour below has no additionalProperties
+        # at all and so is not a map but a bare Object.
+        metadata:
+          type: object
+          additionalProperties: true
+        annotation:
+          type: object
         # A list inside a list. There is no position to open, so the whole thing
         # is set at once.
         chapters:

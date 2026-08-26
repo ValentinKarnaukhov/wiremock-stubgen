@@ -355,6 +355,15 @@ components:
           type: string
         detail:
           type: string
+        # additionalProperties spelled as a boolean rather than a schema. Real problem
+        # documents carry a bag like this, and openapi-generator writes it as a map of
+        # anything -- while params below, having no additionalProperties at all, is
+        # not a map but a bare object.
+        errorParams:
+          type: object
+          additionalProperties: true
+        params:
+          type: object
 
     # A oneOf of a single reference with a discriminator. openapi-generator writes an
     # ordinary class holding the member's properties, with ordinary setters.
