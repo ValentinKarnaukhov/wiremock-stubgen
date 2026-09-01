@@ -184,10 +184,15 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
     // artifact the default cannot see those annotations at all. Overriding serialize
     // is today's escape hatch.
     //
-    // OPEN — NON-OBJECT REQUEST BODIES.
-    // A list body would be rooted at $[*] with requestBody(List<CompositeBody>). For a
-    // bare string body equalToJson is wrong and there is nothing to build a matcher
-    // over, so the emitter must pick from the schema kind rather than assume JSON
-    // objects.
+    // SETTLED — NON-OBJECT REQUEST BODIES. Already generated correctly: a list body
+    // is rooted at $[*] with requestBody(List<CompositeBody>) (postByRequestBodyCompositeList
+    // in this fixture), and a bare primitive body offers only the whole-body form —
+    // equalToJson on a JSON scalar is exactly right for a body declared as JSON, since
+    // a client sending it sends the JSON-encoded scalar too, and there is nothing to
+    // build a matcher over (postByRequestBodyPrimitive, postByRequestBodyPrimitiveList).
+    // A request body declared under a non-JSON media type is a different, untested
+    // question, symmetrical to the response side's own media-type gap. What was
+    // missing here was proof any of this works against a live server rather than only
+    // compiling; now covered live in the example (borrowBooks, addLoanNotes, rateBook).
     // ──────────────────────────────────────────────────────────────────────────
 }

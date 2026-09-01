@@ -153,6 +153,75 @@ paths:
         409:
           $ref: '#/components/responses/Conflict'
 
+  /loans/bulk:
+    post:
+      operationId: borrowBooks
+      tags: [ loans ]
+      # The request body is itself a list rather than an object holding one: the
+      # matcher this needs is rooted at $[*], not $, and asks whether some element
+      # of the array satisfies a condition, never named before on the request side.
+      summary: Borrow several books in one request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/LoanRequest'
+      responses:
+        201:
+          description: Accepted.
+
+  /loans/{loanId}/notes:
+    post:
+      operationId: addLoanNotes
+      tags: [ loans ]
+      # A bare list of primitives at the root: there is nothing to match field by
+      # field, only the whole array as JSON, unlike /loans/bulk above.
+      summary: Free-text notes about a loan, sent as a bare list rather than wrapped.
+      parameters:
+        - name: loanId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        204:
+          description: Accepted.
+
+  /books/{bookId}/rating:
+    post:
+      operationId: rateBook
+      tags: [ books ]
+      # The whole body is a bare number, not an object with a field in it. equalToJson
+      # on a JSON scalar is what this exercises; there is no matcher form for it, the
+      # same as postByRequestBodyPrimitive in the core fixture.
+      summary: A rating sent as the whole body rather than wrapped in an object.
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: integer
+      responses:
+        204:
+          description: Accepted.
+
   /loans/{loanId}:
     delete:
       operationId: returnLoan

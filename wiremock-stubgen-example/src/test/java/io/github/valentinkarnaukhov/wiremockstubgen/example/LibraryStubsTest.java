@@ -5,7 +5,10 @@ import com.example.library.model.PageRequest;
 import com.example.library.stubs.books.GetBookStub;
 import com.example.library.stubs.books.GetIsbnStub;
 import com.example.library.stubs.books.SearchBooksStub;
+import com.example.library.stubs.books.RateBookStub;
+import com.example.library.stubs.loans.AddLoanNotesStub;
 import com.example.library.stubs.loans.BorrowBookStub;
+import com.example.library.stubs.loans.BorrowBooksStub;
 import com.example.library.stubs.loans.ListEventsStub;
 import com.example.library.stubs.loans.ListNotificationsStub;
 import com.example.library.stubs.loans.ReturnLoanStub;
@@ -172,6 +175,62 @@ class LibraryStubsTest {
         assertThat(get("/books?offset=40&size=10&sortBy=YEAR").statusCode()).isEqualTo(404);
         // Nothing called Page is ever sent, so nothing may be waiting for it.
         assertThat(get("/books?Page=whatever").statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void matchesABarePrimitiveWholeRequestBodyAsJson() throws Exception {
+        new RateBookStub(target)
+                .pathBookId("978-0201616224")
+                .requestBody(5)
+                .code204()
+                .mock();
+
+        // The whole body is a bare JSON number, not an object with a field in it --
+        // there is no matcher form for this, only the whole-body equalToJson.
+        assertThat(post("/books/978-0201616224/rating", "5").statusCode()).isEqualTo(204);
+        assertThat(post("/books/978-0201616224/rating", "4").statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void matchesABareListWholeRequestBodyAsJson() throws Exception {
+        new AddLoanNotesStub(target)
+                .pathLoanId("loan-1")
+                .requestBody(List.of("first", "second"))
+                .code204()
+                .mock();
+
+        assertThat(post("/loans/loan-1/notes", "[\"first\",\"second\"]").statusCode()).isEqualTo(204);
+        // equalToJson compares the whole document: a different array is a different body.
+        assertThat(post("/loans/loan-1/notes", "[\"first\"]").statusCode()).isEqualTo(404);
+        assertThat(post("/loans/loan-1/notes", "[\"second\",\"first\"]").statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void matchesAnyElementOfAListOfObjectsAtTheRootOfARequestBody() throws Exception {
+        // The request body is itself the array -- there is no wrapper object holding
+        // it -- so the matcher is rooted at $[*], never exercised live before this.
+        new BorrowBooksStub(target)
+                .requestBody()
+                    .bookId("978-0201616224")
+                .exit()
+                .code201()
+                .mock();
+
+        HttpResponse<String> matching = post("/loans/bulk", """
+                [
+                  {"bookId": "000-0000000000"},
+                  {"bookId": "978-0201616224"}
+                ]
+                """);
+        assertThat(matching.statusCode()).isEqualTo(201);
+
+        HttpResponse<String> noMatchingElement = post("/loans/bulk", """
+                [
+                  {"bookId": "000-0000000000"},
+                  {"bookId": "111-1111111111"}
+                ]
+                """);
+        assertThat(noMatchingElement.statusCode()).isEqualTo(404);
     }
 
     @Test
