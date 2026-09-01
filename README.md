@@ -79,14 +79,16 @@ running WireMock server.
 
 ## From spec to stub
 
-Two operations from that same example, abridged to fit here. The left column is
-what you write once; the right column is how a test uses what gets generated
-from it — nothing in the right column is hand-maintained.
+Two operations from that same example, abridged to fit here. The first column
+is what you write once; the second is how a test uses what gets generated from
+it; the third is the actual HTTP exchange that stub answers to, once
+registered — nothing past the first column is hand-maintained.
 
 <table>
 <tr>
 <th>OpenAPI (abridged)</th>
 <th>Generated stub, in use</th>
+<th>What the mock does</th>
 </tr>
 <tr>
 <td>
@@ -144,6 +146,27 @@ or remove any of them in the spec and the corresponding call stops compiling
 here, rather than the stub quietly matching nothing.
 
 </td>
+<td>
+
+```http
+GET /books/978-0201616224
+```
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "title": "The Pragmatic Programmer",
+  "author": { "name": "Andrew Hunt" }
+}
+```
+
+Any other path — a different id, or no id at all — gets WireMock's ordinary
+unmatched-request response. `id` is absent from the body because nothing
+called the accessor for it.
+
+</td>
 </tr>
 <tr>
 <td>
@@ -199,6 +222,43 @@ Answers only a request whose body carries this `bookId` and this
 `borrower.email` — `days` is never mentioned, so any value for it, or none,
 still matches. `equalToJson` on a hand-written string could not express
 "these two fields, whatever else is there" without also asserting on `days`.
+
+</td>
+<td>
+
+Matches, `days` present but never asked about:
+
+```http
+POST /loans
+Content-Type: application/json
+
+{
+  "bookId": "978-0201616224",
+  "borrower": {"email": "reader@example.com"},
+  "days": 14
+}
+```
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{ "id": "loan-1" }
+```
+
+Does not match — right `bookId`, wrong email:
+
+```http
+POST /loans
+Content-Type: application/json
+
+{
+  "bookId": "978-0201616224",
+  "borrower": {"email": "someone.else@example.com"}
+}
+```
+```http
+HTTP/1.1 404 Not Found
+```
 
 </td>
 </tr>
