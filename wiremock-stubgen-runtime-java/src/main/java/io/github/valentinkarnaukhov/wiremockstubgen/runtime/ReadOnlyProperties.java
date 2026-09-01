@@ -3,16 +3,8 @@ package io.github.valentinkarnaukhov.wiremockstubgen.runtime;
 import java.lang.reflect.Field;
 
 /**
- * Writes a property the model generator deliberately left without a setter.
- *
- * <p>openapi-generator emits a {@code readOnly} property with a getter and no setter; the
- * only public way in is a constructor taking every read-only property at once, which a
- * builder told one property at a time cannot use. Skipping such properties is worse: a
- * stub plays the server, and these are exactly the fields only a server produces.
- *
- * <p>So the field is written by reflection. This is the one place in the generated output
- * the compiler does not check, which is why it is here, named and documented, rather than
- * inlined into every stub that needs it.
+ * Writes a read-only property via reflection. openapi-generator gives such a property a
+ * getter but no setter, and a stub still has to fill it in as the server would.
  */
 public final class ReadOnlyProperties {
 

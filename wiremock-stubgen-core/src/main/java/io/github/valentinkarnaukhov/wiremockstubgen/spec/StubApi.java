@@ -9,9 +9,7 @@ import java.util.Optional;
 /**
  * A whole API as understood by the generator: a flat list of operations, the schemas
  * those operations refer to, and the spec-level title used to derive default naming.
- *
- * <p>This type — and everything else under {@code spec} — is deliberately free of any
- * target-language concepts.
+ * Everything under {@code spec} is free of target-language concepts.
  *
  * @param title      the specification title
  * @param operations every operation the specification declares

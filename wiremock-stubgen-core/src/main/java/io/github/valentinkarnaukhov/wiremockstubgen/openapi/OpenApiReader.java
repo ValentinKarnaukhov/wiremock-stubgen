@@ -33,11 +33,8 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 /**
- * Reads an OpenAPI document into the language-neutral description under {@code spec}.
- *
- * <p>The only place that knows about swagger-parser: everything downstream sees records
- * with no third-party types in them. Reading is deliberately lossy — a specification says
- * far more than a stub builder can express.
+ * Reads an OpenAPI document into the language-neutral records under {@code spec}. The
+ * only place that knows about swagger-parser.
  */
 public final class OpenApiReader {
 
@@ -245,11 +242,10 @@ public final class OpenApiReader {
     }
 
     /**
-     * How a list in the query string is written, mirroring openapi-generator 7.24.0 — the
-     * client the stub has to agree with. Measured there: {@code spaceDelimited} and
-     * {@code pipeDelimited} pick their separator whatever {@code explode} says,
-     * {@code deepObject} falls back to a comma, and everything else repeats the parameter
-     * unless {@code explode} is explicitly false.
+     * How a list in the query string is written, mirroring openapi-generator 7.24.0:
+     * {@code spaceDelimited} and {@code pipeDelimited} pick their separator whatever
+     * {@code explode} says, {@code deepObject} falls back to a comma, and everything else
+     * repeats the parameter unless {@code explode} is explicitly false.
      *
      * <p>This is the one place {@code explode} is read. Elsewhere it is deliberately
      * ignored, but here it decides the text on the wire and cannot be guessed around.

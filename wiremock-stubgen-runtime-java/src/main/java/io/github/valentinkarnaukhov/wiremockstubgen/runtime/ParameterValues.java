@@ -9,11 +9,7 @@ import java.util.Objects;
 
 /**
  * Turns the values handed to a stub's parameter method into the text a request carries.
- *
- * <p>Generated code calls these instead of inlining the same loops in every stub. The
- * shapes come from openapi-generator's {@code ApiClient}: a joined list is each element
- * stringified and glued by one separator, and a repeated parameter is one pattern per
- * element, matched as a set rather than a sequence.
+ * Generated code calls these instead of inlining the same loops in every stub.
  */
 public final class ParameterValues {
 
@@ -22,9 +18,8 @@ public final class ParameterValues {
 
     /**
      * The elements written one after another with {@code separator} between them.
-     *
-     * <p>{@code String.valueOf} on the list itself would give Java's {@code [a, b]}, which
-     * no client ever sends — the brackets and the space are the reason this method exists.
+     * {@code String.valueOf} on the list itself would give Java's {@code [a, b]}, which
+     * no client sends.
      */
     public static String join(String separator, Object... values) {
         Objects.requireNonNull(separator, "separator");
@@ -50,15 +45,9 @@ public final class ParameterValues {
     }
 
     /**
-     * Renders a single value the way openapi-generator's own {@code ApiClient} does, so
-     * that a stub matches whatever text that client actually puts on the wire.
-     *
-     * <p>Measured on 7.24.0: {@code parameterToString} special-cases only {@code Date} and
-     * {@code OffsetDateTime} before falling back to {@code String.valueOf}. We never emit
-     * {@code Date} — {@code LocalDate} and every other mapped type already agree with
-     * {@code toString()} — so {@code OffsetDateTime} is the one case worth a formatter:
-     * its {@code toString()} omits seconds when they are zero (10:15 vs 10:15:00), while
-     * the client always writes them via {@code DateTimeFormatter.ISO_OFFSET_DATE_TIME}.
+     * Renders a value the way openapi-generator's client does. Only {@code OffsetDateTime}
+     * needs special-casing: its {@code toString()} drops seconds when they're zero
+     * (10:15 vs 10:15:00), unlike the client's {@code ISO_OFFSET_DATE_TIME} formatter.
      */
     public static String format(Object value) {
         if (value instanceof OffsetDateTime offsetDateTime) {

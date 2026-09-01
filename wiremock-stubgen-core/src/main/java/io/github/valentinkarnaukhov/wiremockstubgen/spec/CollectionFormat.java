@@ -3,11 +3,9 @@ package io.github.valentinkarnaukhov.wiremockstubgen.spec;
 /**
  * How a collection-valued parameter reaches the wire.
  *
- * <p>A list is not one string, and which string it becomes is not a matter of taste: the
- * client picks a form and the stub has to expect exactly that one. The values below were
- * measured against openapi-generator 7.24.0, whose {@code ApiClient.CollectionFormat} this
- * mirrors — a query parameter without {@code explode: false} is <em>repeated</em>, not
- * comma-joined, which is the case most easily got wrong.
+ * <p>Mirrors openapi-generator 7.24.0's {@code ApiClient.CollectionFormat}: a query
+ * parameter without {@code explode: false} is <em>repeated</em>, not comma-joined, which
+ * is the case most easily got wrong.
  */
 public enum CollectionFormat {
 

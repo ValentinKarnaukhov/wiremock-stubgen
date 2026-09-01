@@ -300,10 +300,9 @@ final class StubEmitter {
     }
 
     /**
-     * A parameter's location is part of its method name — {@code pathStringParam},
-     * {@code queryStringParam} — because a specification may declare a path and a query
-     * parameter of the same name, which would otherwise be two identical signatures.
-     * Prefixing only on collision would make a name depend on the rest of the operation.
+     * A parameter's location prefixes its method name — {@code pathStringParam},
+     * {@code queryStringParam} — since a path and a query parameter of the same name
+     * would otherwise be two identical signatures.
      */
     private static String methodNameOf(Parameter parameter) {
         String prefix = parameter.location().name().toLowerCase(Locale.ROOT);
@@ -345,17 +344,7 @@ final class StubEmitter {
                 model.map(m -> builderEntry(m, imports)).orElse(null), mediaTypeOverride(response));
     }
 
-    /**
-     * The {@code Content-Type} to set explicitly, or {@code null} to leave
-     * {@link io.github.valentinkarnaukhov.wiremockstubgen.runtime.AbstractStub}'s own
-     * default alone.
-     *
-     * <p>{@code AbstractStub} always answers {@code application/json} unless told
-     * otherwise, so a response declaring anything else — {@code text/plain}, a versioned
-     * type like {@code application/vnd.library.v1+json} — needs the generated method to
-     * say so explicitly; there would otherwise be nothing pointing at the mismatch short
-     * of reading the specification by hand. A response with no body has no header to set.
-     */
+    /** The {@code Content-Type} to set, or {@code null} to keep the default (application/json). */
     private static String mediaTypeOverride(Response response) {
         if (response.mediaType() == null || "application/json".equalsIgnoreCase(response.mediaType())) {
             return null;

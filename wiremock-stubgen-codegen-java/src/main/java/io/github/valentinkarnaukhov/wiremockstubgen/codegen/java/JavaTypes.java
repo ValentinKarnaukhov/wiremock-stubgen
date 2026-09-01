@@ -66,9 +66,8 @@ final class JavaTypes {
                 case "uri" -> "java.net.URI";
                 case "binary" -> "java.io.File";
                 case "byte" -> "byte[]";
-                // Measured on 7.24.0: url, email, hostname, ipv4 and password all stay
-                // String, as does any format the generator does not know. Only the six
-                // above buy a type of their own.
+                // url, email, hostname, ipv4 and password all stay String too, as does
+                // any format this generator does not know.
                 default -> "java.lang.String";
             };
             default -> "java.lang.String";
@@ -76,13 +75,10 @@ final class JavaTypes {
     }
 
     /**
-     * Renders a parameter value as the string an HTTP request actually carries. The typed
-     * signature exists so the compiler checks the call, not because the value stays typed.
-     *
-     * <p>Everything but a bare String is routed through {@code formatterFqn}'s
-     * {@code format} method, which special-cases {@code OffsetDateTime} to agree with
-     * openapi-generator's client — {@code String.valueOf} alone disagrees with it whenever
-     * the time has zero seconds.
+     * Renders a parameter value as the string an HTTP request actually carries. Routed
+     * through {@code formatterFqn}'s {@code format} method for everything but a bare
+     * String, since {@code OffsetDateTime} disagrees with plain {@code String.valueOf}
+     * whenever the time has zero seconds.
      */
     static String asQueryValue(String javaType, String expression, String formatterFqn, Imports imports) {
         if ("java.lang.String".equals(javaType)) {

@@ -5,26 +5,14 @@ import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 import java.util.Objects;
 
 /**
- * One level of a generated chain: it knows what created it and which stub it ultimately
- * belongs to, and that is all.
+ * One level of a generated fluent chain: knows its parent and the stub it belongs to.
  *
- * <p>Named after the position rather than the direction because both halves of a stub
- * extend it — {@link AbstractResponseBodyBuilder} writes into a model instance,
- * {@link AbstractRequestBodyMatcher} adds a JSONPath condition — and nothing they share is
- * about producing or matching.
+ * <p>Shared by {@link AbstractResponseBodyBuilder} and {@link AbstractRequestBodyMatcher}
+ * so a schema keeps one nested class regardless of how many response codes or operations
+ * use it. {@link #mock()} and {@link #buildStub()} are repeated here so a caller doesn't
+ * have to {@link #exit()} first just to finish the chain.
  *
- * <p>Nesting the levels rather than flattening every path onto the stub keeps the status
- * code out of accessor names, so two codes declaring one schema share a builder; a level
- * is reached only through the method that created it; and the caller never names an
- * intermediate model type. Generated levels are inner classes of their stub, so one
- * operation stays one file, at the cost of duplicating a schema's builder into every stub
- * that mentions it.
- *
- * <p>The price is that configuration becomes ordered: once inside a level the stub's own
- * methods are out of scope until {@link #exit()}. {@link #mock()} and {@link #buildStub()}
- * are repeated here so the common case does not have to climb back out first.
- *
- * @param <P> the level or stub to return to
+ * @param <P> the level or stub {@link #exit()} returns to
  */
 public abstract class AbstractBodyScope<P> {
 
@@ -36,10 +24,7 @@ public abstract class AbstractBodyScope<P> {
         this.root = Objects.requireNonNull(root, "root");
     }
 
-    /**
-     * The stub this level ultimately belongs to. Generated code passes it down when it
-     * creates a nested level, so every one of them can finish the chain.
-     */
+    /** The stub this level ultimately belongs to. */
     protected final AbstractStub<?> root() {
         return root;
     }

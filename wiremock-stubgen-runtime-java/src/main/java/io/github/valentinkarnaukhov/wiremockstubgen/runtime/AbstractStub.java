@@ -17,9 +17,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
  * Base class for generated stub builders.
  *
  * <p>Carries everything that does not depend on the operation: where to register, how the
- * response is assembled, and an escape hatch onto the raw WireMock API. Keeping this
- * hand-written means fixing a bug here is a runtime version bump, not a regeneration of
- * every stub in every consuming project.
+ * response is assembled, and an escape hatch onto the raw WireMock API.
  *
  * @param <S> the concrete builder type, so fluent methods keep the caller's type
  */
@@ -60,16 +58,11 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
     }
 
     /**
-     * Backs the generated per-code methods, each of which is a single typed delegation.
-     *
-     * <p>The body is Object here because the declared schemas of one operation share no
-     * supertype; the typed generated method reintroduces the type. The no-argument form of
-     * that method installs an empty instance and hands it to a body builder, which then
-     * writes into the very object this method stored.
-     *
-     * <p>A stub is one mapping and therefore one response, so a second call replaces the
-     * first. Sequences of responses are WireMock scenarios, reachable through
-     * {@link #customize(Consumer)}.
+     * Backs the generated per-code methods, each a single typed delegation. The body is
+     * {@code Object} here since one operation's declared schemas share no supertype; the
+     * generated method reintroduces the type. A second call replaces the first, since a
+     * stub is one mapping; a sequence of responses is a WireMock scenario, reachable
+     * through {@link #customize(Consumer)}.
      */
     protected final S response(int status, Object body) {
         this.status = status;
@@ -81,15 +74,10 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
 
     /**
      * Requires the request body to equal the given object as JSON. Backs the generated
-     * {@code requestBody(Schema)} method.
-     *
-     * <p>Not named {@code requestBody}: that would be a legal overload of the generated
-     * {@code requestBody(Schema)}, whose {@code return requestBody(body)} would then
-     * resolve to itself — a StackOverflowError at runtime rather than a compile error.
-     *
-     * <p>Replaces rather than accumulates, since two whole-document matchers describing
-     * different bodies could never both hold. Field matchers are separate conditions and
-     * do add up.
+     * {@code requestBody(Schema)} method — not named {@code requestBody} itself, since
+     * that would recurse into a {@code StackOverflowError} instead of a compile error.
+     * Replaces rather than accumulates, since two whole-document matchers describing
+     * different bodies could never both hold.
      */
     protected final S matchWholeRequestBody(Object body) {
         this.wholeBodyPattern = equalToJson(serialize(body));
@@ -98,17 +86,11 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
 
     /**
      * Adds one condition on the request body, or replaces the one previously added under
-     * the same owner. Generated matcher builders reach this through a method reference
-     * the generated stub hands them, which is why it can stay protected.
-     *
-     * <p>{@code owner} is normally a fresh, single-use key — one condition, one entry,
-     * accumulating alongside every other condition, the same way repeated WireMock
-     * {@code withRequestBody} calls AND together. A matcher for some element of an array
-     * passes itself as the owner instead, on every condition it is asked for: since an
-     * array position could otherwise be satisfied by a different element for each
-     * condition, such a matcher folds every condition asked of it into one combined
-     * filter under one entry, replaced each time rather than added to, so what ends up
-     * registered is always the complete, current combination and never a partial one.
+     * the same owner. {@code owner} is usually a fresh key, so conditions accumulate the
+     * way repeated WireMock {@code withRequestBody} calls do; a matcher for some element
+     * of an array instead passes itself as the owner on every call, folding every
+     * condition it is asked for into one replaced filter, since an array position could
+     * otherwise be satisfied by a different element per condition.
      */
     protected final void addRequestBodyPattern(Object owner, StringValuePattern pattern) {
         fieldPatterns.put(Objects.requireNonNull(owner, "owner"), Objects.requireNonNull(pattern, "pattern"));
@@ -175,9 +157,8 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
 
     /**
      * Turns a body into the JSON text a request is matched against or a response is sent
-     * as. Delegates to {@link StubTarget#serializer()} — see {@link BodySerializer} for
-     * why that is the decision and not a mapper bundled here — and stays overridable in
-     * case one stub genuinely needs something even that does not cover.
+     * as. Delegates to {@link StubTarget#serializer()} (see {@link BodySerializer}) and
+     * stays overridable for the rare case that isn't enough.
      */
     protected String serialize(Object body) {
         return target.serializer().serialize(body);

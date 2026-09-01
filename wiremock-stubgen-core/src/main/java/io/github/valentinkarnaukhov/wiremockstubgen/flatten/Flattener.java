@@ -20,20 +20,16 @@ import java.util.function.Consumer;
 /**
  * Turns a body schema into the scopes and accessors a stub is built from.
  *
- * <p>The rules were read back out of hand-written golden reference stubs:
- *
  * <ol>
  *   <li><b>A primitive property is a leaf.</b> So is an enum, a map, and an array of
  *       arrays — anything with no described object inside it.</li>
  *   <li><b>A single-valued object property gets no accessor at all.</b> Its own accessors
- *       are lifted into the current scope under a compound name, recursively. It follows
- *       that a schema only ever reached through single-valued properties never gets a
- *       class of its own.</li>
+ *       are lifted into the current scope under a compound name, recursively.</li>
  *   <li><b>An array of leaves is a leaf, and the two sides disagree about it.</b> A
  *       response replaces the whole list; a request asks whether some element equals the
  *       value.</li>
- *   <li><b>An array of described objects hands out a scope.</b> Flattening stops there:
- *       without a scope the API would have to guess which element a value belongs to.</li>
+ *   <li><b>An array of described objects hands out a scope.</b> Without one the API would
+ *       have to guess which element a value belongs to.</li>
  *   <li><b>Depth is counted inside a scope and restarts at every nested list.</b> See
  *       {@link BodyScope}.</li>
  *   <li><b>Names are the target's to spell</b>, and collisions between two routes that
@@ -41,9 +37,8 @@ import java.util.function.Consumer;
  *       {@link FlatteningException}.</li>
  * </ol>
  *
- * <p>There is no cycle detection and none is needed: a cycle through a list stops when the
- * list hands out a scope, and a cycle through single-valued properties alone is stopped by
- * the depth limit.
+ * <p>No cycle detection is needed: a cycle through a list stops when the list hands out a
+ * scope, and a cycle through single-valued properties alone is stopped by the depth limit.
  */
 public final class Flattener {
 

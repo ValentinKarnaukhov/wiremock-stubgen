@@ -60,18 +60,15 @@ record StubView(
     }
 
     /**
-     * A {@code null} type means the response declares no body, and the template emits a
-     * no-argument method rather than one taking {@code Object}. A {@code null} builder
-     * means the body is there but cannot be taken apart — a bare string, a map, an array
-     * of primitives — or that no model package was configured to name its pieces.
-     */
-    /**
      * @param status           the expression put on the wire, which is a literal for a
      *                         declared code and the caller's argument for {@code default}
      * @param statusParameter  whether the method takes that status as a parameter
+     * @param type             {@code null} means the response declares no body, so the
+     *                         template emits a no-argument method
+     * @param builder          {@code null} means the body exists but cannot be taken
+     *                         apart (a bare string, a map, no model package configured)
      * @param mediaType        the {@code Content-Type} to set when it is not
-     *                         {@code application/json} — {@link AbstractStub}'s own
-     *                         default, so calling it again would say nothing new
+     *                         {@code application/json}, {@link AbstractStub}'s own default
      */
     record ResponseMethod(
             String name,

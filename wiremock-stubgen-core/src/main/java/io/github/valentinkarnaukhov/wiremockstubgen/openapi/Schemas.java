@@ -144,10 +144,9 @@ final class Schemas {
      * Resolves a reference to what the referenced schema actually is.
      *
      * <p>openapi-generator writes a model only for schemas with a shape of their own —
-     * properties, a composition, or an enum. A name given to a boolean, or to an array of
-     * something else, is an alias: the generator inlines {@code Boolean} or
-     * {@code List<Thing>} into signatures and no class by that name exists. Naming the
-     * class here anyway is how a generated stub stops compiling.
+     * properties, a composition, or an enum. A name given to a boolean or an array is an
+     * alias the generator inlines into signatures instead, so naming the class here
+     * anyway is how a generated stub stops compiling.
      *
      * @param visiting guards a chain of aliases that refers back into itself.
      */
@@ -231,17 +230,11 @@ final class Schemas {
     }
 
     /**
-     * Registers an object the document wrote out in place rather than declaring.
+     * Registers an object the document wrote out in place rather than declaring, under
+     * the name openapi-generator would give it, so the two never drift apart.
      *
-     * <p>openapi-generator will generate a model class for this same inline schema, so the
-     * name must match what it picks; inventing one of our own is how the two drift apart.
-     *
-     * <p>The generator writes one class per <em>shape</em>, not per place: two inline
-     * objects written out identically, whether in one schema or in schemas far apart,
-     * become a single class named after whichever came first. Naming the second one after
-     * where it sits would name a class the generator never wrote. Identical means written
-     * identically — a description, an order of properties or a {@code required} entry is
-     * enough to tell two shapes apart.
+     * <p>One class per shape, not per site: two inline objects written out identically
+     * become one class named after whichever came first.
      */
     private TypeRef inline(Schema<?> schema, String nameHint) {
         if (nameHint == null || nameHint.isBlank()) {
@@ -400,14 +393,11 @@ final class Schemas {
     }
 
     /**
-     * Flattens a composition into one property list.
-     *
-     * <p>{@code allOf} members are merged in the order they are written, and a member may
-     * be a composition itself. A property declared twice keeps the position of its first
-     * declaration and the definition of its last, which is what openapi-generator settles
-     * on. {@code oneOf} and {@code anyOf} members are folded in the same way under
-     * {@link Composition#MERGE}, after the {@code allOf} members and before the schema's
-     * own properties.
+     * Flattens a composition into one property list, in the order openapi-generator
+     * settles on: {@code allOf} members first (a member may be a composition itself), then
+     * {@code oneOf}/{@code anyOf} members under {@link Composition#MERGE}, then the
+     * schema's own properties. A property declared twice keeps its first position and its
+     * last definition.
      *
      * @param visiting guards composition cycles. Unlike {@link #typeOf}, which stops at a
      *                 name, this follows references, so mutually composed schemas would
