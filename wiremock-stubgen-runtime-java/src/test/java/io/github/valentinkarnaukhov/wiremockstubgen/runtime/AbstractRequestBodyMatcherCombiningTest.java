@@ -36,6 +36,25 @@ class AbstractRequestBodyMatcherCombiningTest {
     }
 
     @Test
+    void exposesThePathItIsRootedAtToSubclasses() {
+        TestMatcher matcher = new TestMatcher(new Recorder(), "$.compositeList[*]");
+
+        assertThat(matcher.pathOf()).isEqualTo("$.compositeList[*]");
+    }
+
+    @Test
+    void writesAStandaloneContainsFilterWhenNotAtAnArrayPosition() {
+        // primitiveList() on the root matcher: a condition on a sub-array reached from a
+        // single, unambiguous node, so it stands on its own rather than joining anything.
+        Recorder recorder = new Recorder();
+        TestMatcher matcher = new TestMatcher(recorder, "$");
+
+        matcher.matchContains("['tags']", "X");
+
+        assertThat(recorder.jsonPathsOf()).containsExactly("$['tags'][?(@ == 'X')]");
+    }
+
+    @Test
     void combinesEveryCallOnOneElementMatcherIntoOneReplacedFilter() {
         Recorder recorder = new Recorder();
         TestMatcher matcher = new TestMatcher(recorder, "$.items[*]");
@@ -99,6 +118,10 @@ class AbstractRequestBodyMatcherCombiningTest {
     private static final class TestMatcher extends AbstractRequestBodyMatcher<Object> {
         TestMatcher(Recorder recorder, String path) {
             super(new Object(), new TestStub(), path, recorder::accept);
+        }
+
+        String pathOf() {
+            return path();
         }
     }
 

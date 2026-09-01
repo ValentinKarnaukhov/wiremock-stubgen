@@ -10,6 +10,7 @@ import java.util.Map;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * A stub renders every body through {@link StubTarget#serializer()} rather than a mapper
@@ -67,6 +68,25 @@ class AbstractStubSerializationTest {
         BodySerializer serializer = BodySerializer.of(mapper);
 
         assertThat(serializer.serialize(Map.of("a", 1))).isEqualTo("{\"a\":1}");
+    }
+
+    @Test
+    void ofWrapsAJacksonFailureRatherThanLettingTheCheckedExceptionEscape() {
+        // A cyclic structure is something Jackson's default configuration refuses to
+        // serialise -- infinite recursion, detected rather than run into -- which is
+        // enough on its own to reach the catch block without needing a broken mapper.
+        Cyclic cyclic = new Cyclic();
+        cyclic.self = cyclic;
+        BodySerializer serializer = BodySerializer.of(new ObjectMapper());
+
+        assertThatThrownBy(() -> serializer.serialize(cyclic))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("could not serialise")
+                .cause().isInstanceOf(com.fasterxml.jackson.core.JsonProcessingException.class);
+    }
+
+    private static final class Cyclic {
+        public Cyclic self;
     }
 
     private static final class TestStub extends AbstractStub<TestStub> {
