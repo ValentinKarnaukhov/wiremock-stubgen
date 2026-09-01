@@ -81,14 +81,14 @@ running WireMock server.
 
 Two operations from that same example, abridged to fit here. The first column
 is what you write once; the second is how a test uses what gets generated from
-it; the third is the actual HTTP exchange that stub answers to, once
-registered — nothing past the first column is hand-maintained.
+it; the third is the actual `StubMapping` JSON that call registers with
+WireMock — nothing past the first column is hand-maintained.
 
 <table>
 <tr>
 <th>OpenAPI (abridged)</th>
 <th>Generated stub, in use</th>
-<th>What the mock does</th>
+<th>The stub mapping it registers</th>
 </tr>
 <tr>
 <td>
@@ -148,23 +148,27 @@ here, rather than the stub quietly matching nothing.
 </td>
 <td>
 
-```http
-GET /books/978-0201616224
-```
-
-```http
-HTTP/1.1 200 OK
-Content-Type: application/json
-
+```json
 {
-  "title": "The Pragmatic Programmer",
-  "author": { "name": "Andrew Hunt" }
+  "request": {
+    "urlPathTemplate": "/books/{bookId}",
+    "method": "GET",
+    "pathParameters": {
+      "bookId": { "equalTo": "978-0201616224" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "body": "{\"title\":\"The Pragmatic Programmer\",\"author\":{\"name\":\"Andrew Hunt\"}}"
+  }
 }
 ```
 
-Any other path — a different id, or no id at all — gets WireMock's ordinary
-unmatched-request response. `id` is absent from the body because nothing
-called the accessor for it.
+The actual `StubMapping` JSON WireMock registers, taken straight from
+`.buildStub()`. Trimmed of the `id`/`uuid` WireMock assigns and of the empty
+`tags`/`status`/etc. `Book` also declares but this call never set — nothing in
+the body but what was asked for.
 
 </td>
 </tr>
@@ -226,39 +230,27 @@ still matches. `equalToJson` on a hand-written string could not express
 </td>
 <td>
 
-Matches, `days` present but never asked about:
-
-```http
-POST /loans
-Content-Type: application/json
-
+```json
 {
-  "bookId": "978-0201616224",
-  "borrower": {"email": "reader@example.com"},
-  "days": 14
+  "request": {
+    "urlPath": "/loans",
+    "method": "POST",
+    "bodyPatterns": [
+      { "matchesJsonPath": { "expression": "$['bookId']", "equalTo": "978-0201616224" } },
+      { "matchesJsonPath": { "expression": "$['borrower']['email']", "equalTo": "reader@example.com" } }
+    ]
+  },
+  "response": {
+    "status": 201,
+    "headers": { "Content-Type": "application/json" },
+    "body": "{\"id\":\"loan-1\"}"
+  }
 }
 ```
-```http
-HTTP/1.1 201 Created
-Content-Type: application/json
 
-{ "id": "loan-1" }
-```
-
-Does not match — right `bookId`, wrong email:
-
-```http
-POST /loans
-Content-Type: application/json
-
-{
-  "bookId": "978-0201616224",
-  "borrower": {"email": "someone.else@example.com"}
-}
-```
-```http
-HTTP/1.1 404 Not Found
-```
+Two independent `bodyPatterns`, which WireMock ANDs: nothing here checks
+`days` at all, which is exactly how a request that includes it, and a request
+that omits it, both still match.
 
 </td>
 </tr>
