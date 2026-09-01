@@ -39,13 +39,13 @@ public final class {{className}} extends {{abstractStub}}<{{className}}> {
 {{#responses}}
 
     public {{className}} {{name}}({{#statusParameter}}int status{{#type}}, {{/type}}{{/statusParameter}}{{#type}}{{type}} body{{/type}}) {
-        return response({{status}}, {{#type}}body{{/type}}{{^type}}null{{/type}});
+        return response({{status}}, {{#type}}body{{/type}}{{^type}}null{{/type}}){{#mediaType}}.contentType("{{mediaType}}"){{/mediaType}};
     }
 {{#builder}}
 
     public {{builderClass}}<{{className}}> {{name}}({{#statusParameter}}int status{{/statusParameter}}) {
         {{declaredType}} body = {{initExpression}};
-        response({{status}}, body);
+        response({{status}}, body){{#mediaType}}.contentType("{{mediaType}}"){{/mediaType}};
         return new {{builderClass}}<>(this, body);
     }
 {{/builder}}

@@ -220,9 +220,13 @@ public final class GetResponseErrorsStub extends AbstractStub<GetResponseErrorsS
     // response names none, so any the generator picked would be invented. Covered by
     // the example rather than here, where no operation declares one.
     //
-    // OPEN — CONTENT TYPE. AbstractStub defaults to application/json. Anything else
-    // would also have to stop serialising as JSON, and several media types for one
-    // code have no obvious shape. Uncovered by the fixture.
+    // SETTLED — CONTENT TYPE. A response's Content-Type header now follows the media
+    // type it was actually declared with — codeNNN() calls contentType(...) itself
+    // when that differs from AbstractStub's application/json default — covered by
+    // ContentTypeEmissionTest and live in the example (getIsbn). Matching and building
+    // the body still always assumes JSON regardless of the header: a non-JSON body is
+    // still serialised through the JSON mapper, so a bare string arrives quoted. That
+    // part stays open, tracked separately from the header.
     //
     // OPEN — NO RESPONSE SELECTED. AbstractStub answers 200 with no body, which is
     // misleading when 200 declares a schema and the client fails to deserialise

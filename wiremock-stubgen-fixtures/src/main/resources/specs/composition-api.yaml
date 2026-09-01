@@ -175,6 +175,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/Any'
 
+  /media-types:
+    get:
+      operationId: getMediaTypes
+      tags: [composition]
+      responses:
+        # A vendor JSON type: matched and built as JSON, same as application/json, but
+        # the Content-Type header the stub sends must say what the specification wrote,
+        # not silently default to the plain application/json AbstractStub starts from.
+        '200':
+          description: A JSON-shaped media type that is not exactly application/json.
+          content:
+            application/vnd.library.v1+json:
+              schema:
+                type: string
+        # Not JSON at all. The reader still treats it as JSON internally -- there is
+        # nowhere else for the body to come from -- but warns, and the header must still
+        # say text/plain.
+        '202':
+          description: Declares a media type the reader cannot treat as JSON in fact.
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /repeated:
     get:
       operationId: getRepeated

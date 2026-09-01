@@ -69,13 +69,17 @@ record StubView(
      * @param status           the expression put on the wire, which is a literal for a
      *                         declared code and the caller's argument for {@code default}
      * @param statusParameter  whether the method takes that status as a parameter
+     * @param mediaType        the {@code Content-Type} to set when it is not
+     *                         {@code application/json} — {@link AbstractStub}'s own
+     *                         default, so calling it again would say nothing new
      */
     record ResponseMethod(
             String name,
             String status,
             boolean statusParameter,
             String type,
-            BuilderEntry builder) {
+            BuilderEntry builder,
+            String mediaType) {
     }
 
     record BuilderEntry(String builderClass, String declaredType, String initExpression) {

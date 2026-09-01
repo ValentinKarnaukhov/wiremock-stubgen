@@ -37,10 +37,28 @@ class OpenApiCompositionTest {
 
     @Test
     void readsTheWholeDocumentComplainingOnlyWhereItShould() {
-        assertThat(api.operations()).hasSize(9);
-        // The one thing here that genuinely describes no shape is the anyOf of scalars.
-        assertThat(warnings).singleElement().asString()
-                .contains("Any", "resolved to no properties at all");
+        assertThat(api.operations()).hasSize(10);
+        // The one thing here that genuinely describes no shape is the anyOf of scalars,
+        // and the one response honestly declared as something other than JSON.
+        assertThat(warnings).hasSize(2);
+        assertThat(warnings).anySatisfy(warning -> assertThat(warning)
+                .contains("Any", "resolved to no properties at all"));
+        assertThat(warnings).anySatisfy(warning -> assertThat(warning)
+                .contains("getMediaTypes", "text/plain", "will still treat as JSON"));
+    }
+
+    @Test
+    void carriesTheMediaTypeAResponseWasDeclaredWithRatherThanAssumingJson() {
+        // A vendor JSON type still counts as JSON for matching and building the body --
+        // there is nowhere else for it to come from -- but the header the stub answers
+        // with must say what the specification wrote, so both are carried through.
+        assertThat(responseOf("getMediaTypes", 200).mediaType()).isEqualTo("application/vnd.library.v1+json");
+        assertThat(responseOf("getMediaTypes", 202).mediaType()).isEqualTo("text/plain");
+
+        // The ordinary case, unaffected: a response declared as exactly application/json
+        // still says so, so the emitter can tell the two apart without repeating the
+        // reader's fallback logic.
+        assertThat(responseOf("getAliases", 200).mediaType()).isEqualTo("application/json");
     }
 
     // ── allOf ─────────────────────────────────────────────────────────────────
@@ -419,10 +437,13 @@ class OpenApiCompositionTest {
     }
 
     private static TypeRef response(String operationId, int code) {
+        return responseOf(operationId, code).body();
+    }
+
+    private static io.github.valentinkarnaukhov.wiremockstubgen.spec.Response responseOf(String operationId, int code) {
         return operation(operationId).responses().stream()
                 .filter(response -> Integer.valueOf(code).equals(response.statusCode()))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError(operationId + " has no response " + code))
-                .body();
+                .orElseThrow(() -> new AssertionError(operationId + " has no response " + code));
     }
 }

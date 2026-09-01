@@ -342,7 +342,25 @@ final class StubEmitter {
                 ? null
                 : imports.use(bodyType(response.body()));
         return new StubView.ResponseMethod(name, status, response.isDefault(), type,
-                model.map(m -> builderEntry(m, imports)).orElse(null));
+                model.map(m -> builderEntry(m, imports)).orElse(null), mediaTypeOverride(response));
+    }
+
+    /**
+     * The {@code Content-Type} to set explicitly, or {@code null} to leave
+     * {@link io.github.valentinkarnaukhov.wiremockstubgen.runtime.AbstractStub}'s own
+     * default alone.
+     *
+     * <p>{@code AbstractStub} always answers {@code application/json} unless told
+     * otherwise, so a response declaring anything else — {@code text/plain}, a versioned
+     * type like {@code application/vnd.library.v1+json} — needs the generated method to
+     * say so explicitly; there would otherwise be nothing pointing at the mismatch short
+     * of reading the specification by hand. A response with no body has no header to set.
+     */
+    private static String mediaTypeOverride(Response response) {
+        if (response.mediaType() == null || "application/json".equalsIgnoreCase(response.mediaType())) {
+            return null;
+        }
+        return response.mediaType();
     }
 
     /**

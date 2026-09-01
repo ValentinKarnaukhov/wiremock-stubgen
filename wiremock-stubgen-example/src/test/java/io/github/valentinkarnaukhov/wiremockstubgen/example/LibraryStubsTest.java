@@ -3,6 +3,7 @@ package io.github.valentinkarnaukhov.wiremockstubgen.example;
 import com.example.library.model.Book;
 import com.example.library.model.PageRequest;
 import com.example.library.stubs.books.GetBookStub;
+import com.example.library.stubs.books.GetIsbnStub;
 import com.example.library.stubs.books.SearchBooksStub;
 import com.example.library.stubs.loans.BorrowBookStub;
 import com.example.library.stubs.loans.ListEventsStub;
@@ -171,6 +172,25 @@ class LibraryStubsTest {
         assertThat(get("/books?offset=40&size=10&sortBy=YEAR").statusCode()).isEqualTo(404);
         // Nothing called Page is ever sent, so nothing may be waiting for it.
         assertThat(get("/books?Page=whatever").statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void answersWithTheDeclaredMediaTypeRatherThanAbstractStubsDefault() throws Exception {
+        new GetIsbnStub(target)
+                .pathBookId("978-0201616224")
+                .code200("978-0201616224")
+                .mock();
+
+        HttpResponse<String> response = get("/books/978-0201616224/isbn");
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        // AbstractStub starts every response at application/json; the specification
+        // here declares text/plain, and the generated method must say so itself.
+        assertThat(response.headers().firstValue("Content-Type")).contains("text/plain");
+        // Separate, already-tracked gap: a non-object body is still serialised through
+        // the JSON mapper regardless of the declared media type, so a bare string
+        // arrives quoted rather than as plain text. This test only pins the header.
+        assertThat(response.body()).isEqualTo("\"978-0201616224\"");
     }
 
     @Test

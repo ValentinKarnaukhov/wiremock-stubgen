@@ -110,6 +110,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/BookPage'
 
+  /books/{bookId}/isbn:
+    get:
+      operationId: getIsbn
+      tags: [ books ]
+      summary: The book's ISBN, on its own rather than wrapped in a JSON document.
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          # Not JSON. AbstractStub defaults to application/json regardless, so the
+          # generated method must set the header itself or a caller asserting on it
+          # would see the wrong value even though the body matches.
+          description: The ISBN as a bare string.
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /loans:
     post:
       operationId: borrowBook

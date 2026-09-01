@@ -289,9 +289,9 @@ public final class OpenApiReader {
         if (body == null || body.getContent() == null) {
             return null;
         }
-        MediaType media = jsonMediaType(body.getContent(), "the request body of " + operationId);
+        Map.Entry<String, MediaType> media = jsonMediaType(body.getContent(), "the request body of " + operationId);
         return media == null ? null
-                : schemas.typeOf(media.getSchema(), Identifiers.pascalJoin(operationId, "request"));
+                : schemas.typeOf(media.getValue().getSchema(), Identifiers.pascalJoin(operationId, "request"));
     }
 
     private List<Response> responses(io.swagger.v3.oas.models.Operation operation, String operationId,
@@ -306,13 +306,14 @@ public final class OpenApiReader {
             if (response == null) {
                 return;
             }
-            MediaType media = response.getContent() == null ? null
+            Map.Entry<String, MediaType> media = response.getContent() == null ? null
                     : jsonMediaType(response.getContent(), "response " + code + " of " + operationId);
             responses.add(new Response(
                     statusCode(code, operation),
                     media == null ? TypeRef.unknown()
-                            : schemas.typeOf(media.getSchema(),
-                            Identifiers.pascalJoin(operationId, code, "response"))));
+                            : schemas.typeOf(media.getValue().getSchema(),
+                            Identifiers.pascalJoin(operationId, code, "response")),
+                    media == null ? null : media.getKey()));
         });
         return responses;
     }
@@ -367,7 +368,7 @@ public final class OpenApiReader {
      * and requests matched with JSONPath — so a document declaring XML as well would
      * otherwise produce a stub that quietly speaks the wrong dialect.
      */
-    private MediaType jsonMediaType(Map<String, MediaType> content, String what) {
+    private Map.Entry<String, MediaType> jsonMediaType(Map<String, MediaType> content, String what) {
         if (content.isEmpty()) {
             return null;
         }
@@ -377,13 +378,13 @@ public final class OpenApiReader {
                     warnings.accept(what + " declares " + content.keySet()
                             + "; using " + entry.getKey());
                 }
-                return entry.getValue();
+                return entry;
             }
         }
         Map.Entry<String, MediaType> only = content.entrySet().iterator().next();
         warnings.accept(what + " declares no JSON media type, only " + content.keySet()
                 + "; using " + only.getKey() + ", which the generated stub will still treat as JSON");
-        return only.getValue();
+        return only;
     }
 
     // ── NAMES ─────────────────────────────────────────────────────────────────
