@@ -213,6 +213,49 @@ class FlattenerTest {
                 .hasMessageContaining("compositeInner.field");
     }
 
+    /**
+     * An intermediate (a single-valued object a builder has to create along the way)
+     * never becomes an accessor itself, but the generated builder still gives it a
+     * private method named after it. Two single-valued objects joining to the same name
+     * would generate two such methods, which does not compile any better than two public
+     * accessors would.
+     */
+    @Test
+    void refusesToGenerateTwoIntermediatesThatWouldShareAName() {
+        StubApi colliding = apiOf(
+                schema("Root",
+                        property("compositeInner", TypeRef.object("WrapperA")),
+                        property("composite-inner", TypeRef.object("WrapperB"))),
+                schema("WrapperA"),
+                schema("WrapperB"));
+
+        assertThatThrownBy(() -> new Flattener(colliding, FlatteningOptions.defaults(), warning -> {
+        })
+                .flatten(TypeRef.object("Root"), BodySide.RESPONSE))
+                .isInstanceOf(FlatteningException.class)
+                .hasMessageContaining("compositeInner");
+    }
+
+    /**
+     * The same clash, one side an intermediate and the other an ordinary accessor: the
+     * private method a builder needs for the intermediate and the public method for the
+     * accessor would still share a name.
+     */
+    @Test
+    void refusesAnAccessorAndAnIntermediateThatWouldShareAName() {
+        StubApi colliding = apiOf(
+                schema("Root",
+                        property("compositeInner", TypeRef.object("Wrapper")),
+                        property("composite-inner", string())),
+                schema("Wrapper"));
+
+        assertThatThrownBy(() -> new Flattener(colliding, FlatteningOptions.defaults(), warning -> {
+        })
+                .flatten(TypeRef.object("Root"), BodySide.RESPONSE))
+                .isInstanceOf(FlatteningException.class)
+                .hasMessageContaining("compositeInner");
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     private static TypeRef compositeBodyList() {

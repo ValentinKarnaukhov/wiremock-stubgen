@@ -125,7 +125,8 @@ public final class Flattener {
         Map<String, Accessor> byName = new LinkedHashMap<>();
         List<Intermediate> intermediates = new ArrayList<>();
         List<List<String>> truncated = new ArrayList<>();
-        collect(schema, List.of(), byName, intermediates, schema.name(), truncated);
+        Map<String, List<String>> claimed = new LinkedHashMap<>();
+        collect(schema, List.of(), byName, intermediates, schema.name(), truncated, claimed);
         if (!truncated.isEmpty()) {
             String message = ("schema '%s' is deeper than maxDepth %d, so %d route(s) end "
                     + "without accessors, the first at '%s'. Properties under them can only "
@@ -141,7 +142,7 @@ public final class Flattener {
 
     private void collect(ObjectSchema schema, List<String> prefix, Map<String, Accessor> byName,
                          List<Intermediate> intermediates, String scopeName,
-                         List<List<String>> truncated) {
+                         List<List<String>> truncated, Map<String, List<String>> claimed) {
         if (prefix.size() >= options.maxDepth()) {
             // Reaching here at all means a described object was cut off, and a described
             // object always has properties: the reader drops the ones that do not.
@@ -156,22 +157,34 @@ public final class Flattener {
             if (nested.isPresent()) {
                 // Recorded before descending, so the list reads in the order a builder has
                 // to create them: an object always precedes what it contains.
-                intermediates.add(new Intermediate(
+                Intermediate intermediate = new Intermediate(
                         options.accessorName().apply(path), path, nested.get().name(),
-                        property.readOnly()));
-                collect(nested.get(), path, byName, intermediates, scopeName, truncated);
+                        property.readOnly());
+                claim(claimed, scopeName, intermediate.name(), path);
+                intermediates.add(intermediate);
+                collect(nested.get(), path, byName, intermediates, scopeName, truncated, claimed);
                 continue;
             }
 
             Accessor accessor = leafOrTransition(path, type, property.readOnly());
-            Accessor clash = byName.putIfAbsent(accessor.name(), accessor);
-            if (clash != null) {
-                throw new FlatteningException(
-                        "schema '%s' flattens two different properties onto one accessor named '%s': %s and %s. "
-                                .formatted(scopeName, accessor.name(), join(clash.path()), join(accessor.path()))
-                                + "Generated code would not compile. Rename one of the properties in the "
-                                + "specification, or lower maxDepth so the deeper one is not reached.");
-            }
+            claim(claimed, scopeName, accessor.name(), path);
+            byName.put(accessor.name(), accessor);
+        }
+    }
+
+    /**
+     * An intermediate never becomes an accessor, but the generated builder still gives it
+     * a private method named after it, so its name has to be as unique as an accessor's:
+     * both routes end up naming a member of the same class.
+     */
+    private void claim(Map<String, List<String>> claimed, String scopeName, String name, List<String> path) {
+        List<String> clash = claimed.putIfAbsent(name, path);
+        if (clash != null) {
+            throw new FlatteningException(
+                    "schema '%s' flattens two different properties onto the same generated name '%s': %s and %s. "
+                            .formatted(scopeName, name, join(clash), join(path))
+                            + "Generated code would not compile. Rename one of the properties in the "
+                            + "specification, or lower maxDepth so the deeper one is not reached.");
         }
     }
 

@@ -218,7 +218,10 @@ public final class GetResponseErrorsStub extends AbstractStub<GetResponseErrorsS
     //
     // CLOSED — DEFAULT RESPONSE. codeDefault takes the status as a parameter: the
     // response names none, so any the generator picked would be invented. Covered by
-    // the example rather than here, where no operation declares one.
+    // the example rather than here, where no operation declares one. Two responses
+    // resolving to the default at once -- a literal "default" plus an unparseable
+    // status key, or two differently-cased "default" keys -- is refused by the reader
+    // with IllegalArgumentException; see OpenApiReaderTest.
     //
     // SETTLED — CONTENT TYPE. A response's Content-Type header now follows the media
     // type it was actually declared with — codeNNN() calls contentType(...) itself

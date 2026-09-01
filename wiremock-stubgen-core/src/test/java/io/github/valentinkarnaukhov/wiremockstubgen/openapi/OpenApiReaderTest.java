@@ -4,6 +4,7 @@ import io.github.valentinkarnaukhov.wiremockstubgen.fixtures.Fixtures;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.*;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -177,6 +178,59 @@ class OpenApiReaderTest {
         assertThatThrownBy(() -> new OpenApiReader().read("does-not-exist.yaml"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("does-not-exist.yaml");
+    }
+
+    @Test
+    void dropsAResponseWhoseStatusCodeCannotBeParsedRatherThanTreatingItAsDefault(@TempDir Path dir) throws Exception {
+        Path spec = writeSpec(dir, """
+                openapi: 3.0.3
+                info: { title: t, version: "1" }
+                paths:
+                  /x:
+                    get:
+                      operationId: getX
+                      responses:
+                        "2XX":
+                          description: a range this reader does not understand
+                """);
+
+        List<String> warnings = new ArrayList<>();
+        StubApi result = new OpenApiReader(warnings::add).read(spec);
+
+        assertThat(result.operations()).singleElement()
+                .extracting(Operation::responses).asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.LIST)
+                .isEmpty();
+        assertThat(warnings).anySatisfy(w -> assertThat(w).contains("2XX").contains("getX"));
+    }
+
+    @Test
+    void refusesTwoResponsesThatWouldBothResolveToTheDefault(@TempDir Path dir) throws Exception {
+        // Two distinct map keys -- YAML/JSON keys are case-sensitive -- that both fold to
+        // "the default response" once read, which is exactly the case a stub cannot have
+        // two of: codeDefault() can only ever be one method.
+        Path spec = writeSpec(dir, """
+                openapi: 3.0.3
+                info: { title: t, version: "1" }
+                paths:
+                  /x:
+                    get:
+                      operationId: getX
+                      responses:
+                        default:
+                          description: the default
+                        Default:
+                          description: a second one, differently cased
+                """);
+
+        assertThatThrownBy(() -> new OpenApiReader().read(spec))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("getX");
+    }
+
+    private static Path writeSpec(Path dir, String yaml) throws java.io.IOException {
+        Path spec = dir.resolve("spec.yaml");
+        java.nio.file.Files.writeString(spec, yaml);
+        return spec;
     }
 
     private static Operation operation(String operationId) {

@@ -306,15 +306,30 @@ public final class OpenApiReader {
             if (response == null) {
                 return;
             }
+            Integer statusCode = statusCode(code, operationId);
+            if (statusCode == null && !"default".equalsIgnoreCase(code)) {
+                // Not the specification's own default response, just a status this reader
+                // cannot name — a range like "2XX", or anything else that is not an
+                // integer. Folding it into the default would risk two responses claiming
+                // to be it, and codeDefault() can only ever be one method.
+                return;
+            }
             Map.Entry<String, MediaType> media = response.getContent() == null ? null
                     : jsonMediaType(response.getContent(), "response " + code + " of " + operationId);
             responses.add(new Response(
-                    statusCode(code, operation),
+                    statusCode,
                     media == null ? TypeRef.unknown()
                             : schemas.typeOf(media.getValue().getSchema(),
                             Identifiers.pascalJoin(operationId, code, "response")),
                     media == null ? null : media.getKey()));
         });
+        long defaults = responses.stream().filter(Response::isDefault).count();
+        if (defaults > 1) {
+            throw new IllegalArgumentException(operationId + " declares " + defaults
+                    + " responses that all resolve to the default response; a stub can only"
+                    + " ever have one codeDefault() method. Declare at most one literal"
+                    + " 'default' response.");
+        }
         return responses;
     }
 
@@ -348,15 +363,15 @@ public final class OpenApiReader {
         return target;
     }
 
-    private Integer statusCode(String code, io.swagger.v3.oas.models.Operation operation) {
+    private Integer statusCode(String code, String operationId) {
         if ("default".equalsIgnoreCase(code)) {
             return null;
         }
         try {
             return Integer.valueOf(code);
         } catch (NumberFormatException e) {
-            warnings.accept("Ignoring the unparseable status code \"" + code + "\" on "
-                    + operation.getOperationId() + "; treating it as the default response");
+            warnings.accept("Ignoring response \"" + code + "\" on " + operationId
+                    + ": not a status code this reader understands, and not the default response.");
             return null;
         }
     }
