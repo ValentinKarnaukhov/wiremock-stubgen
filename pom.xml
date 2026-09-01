@@ -58,6 +58,10 @@
 
         <swagger-parser.version>2.1.31</swagger-parser.version>
         <wiremock.version>3.13.1</wiremock.version>
+        <!-- Matches the version wiremock 3.13.1 itself transitively depends on, so a
+             consumer supplying a BodySerializer sees the same Jackson our own tests do.
+             provided, same as wiremock itself: the consumer's own classpath decides. -->
+        <jackson.version>2.19.0</jackson.version>
         <jmustache.version>1.16</jmustache.version>
         <junit.version>5.11.4</junit.version>
         <assertj.version>3.27.3</assertj.version>
@@ -106,6 +110,11 @@
                 <groupId>org.wiremock</groupId>
                 <artifactId>wiremock</artifactId>
                 <version>${wiremock.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
             </dependency>
 
             <dependency>

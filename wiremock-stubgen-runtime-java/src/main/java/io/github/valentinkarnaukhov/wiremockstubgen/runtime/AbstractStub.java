@@ -2,7 +2,6 @@ package io.github.valentinkarnaukhov.wiremockstubgen.runtime;
 
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
-import com.github.tomakehurst.wiremock.common.Json;
 import com.github.tomakehurst.wiremock.matching.StringValuePattern;
 import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 
@@ -175,19 +174,12 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
     }
 
     /**
-     * Turns a response body into the bytes WireMock will send.
-     *
-     * <p>UNRESOLVED, and centralised here because of it: the mapper must agree with the
-     * one the consumer's HTTP client deserialises with, or the test fails on a difference
-     * the stub introduced. Consumer models carry Jackson annotations a foreign mapper will
-     * not honour. Note also that {@code org.wiremock:wiremock} bundles Jackson unshaded
-     * whereas {@code wiremock-standalone} relocates it, so under the standalone artifact
-     * this mapper cannot see the consumer's annotations at all.
-     *
-     * <p>Overridable so a consumer can supply their own mapper; a first-class hook is
-     * still owed.
+     * Turns a body into the JSON text a request is matched against or a response is sent
+     * as. Delegates to {@link StubTarget#serializer()} — see {@link BodySerializer} for
+     * why that is the decision and not a mapper bundled here — and stays overridable in
+     * case one stub genuinely needs something even that does not cover.
      */
     protected String serialize(Object body) {
-        return Json.write(body);
+        return target.serializer().serialize(body);
     }
 }

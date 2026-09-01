@@ -32,5 +32,15 @@
             <artifactId>wiremock</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!--
+            Also deliberately 'provided', for the same reason: BodySerializer.of(ObjectMapper)
+            takes the consumer's own mapper, which means the consumer's own Jackson, not a
+            version we would otherwise bundle and could disagree with.
+        -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>

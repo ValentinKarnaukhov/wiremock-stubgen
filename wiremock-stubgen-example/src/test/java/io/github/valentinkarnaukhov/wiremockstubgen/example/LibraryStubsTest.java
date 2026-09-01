@@ -328,6 +328,34 @@ class LibraryStubsTest {
     }
 
     @Test
+    void rendersAResponseBodyThroughAConsumerSuppliedMapperWhenOneWasConfigured() throws Exception {
+        // A bare ObjectMapper cannot serialise OffsetDateTime at all -- there is no
+        // jackson-datatype-jsr310 registered -- unlike WireMock's own bundled mapper,
+        // which already has that module and needs no help for this particular type.
+        // Registering it here stands in for whatever module or configuration a real
+        // consumer's own client needs that WireMock's instance does not carry.
+        com.fasterxml.jackson.databind.ObjectMapper consumerMapper =
+                new com.fasterxml.jackson.databind.ObjectMapper()
+                        .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
+                        .configure(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT, false);
+        StubTarget customTarget = StubTarget.of(wireMock,
+                io.github.valentinkarnaukhov.wiremockstubgen.runtime.BodySerializer.of(consumerMapper));
+
+        new GetIsbnStub(customTarget)
+                .pathBookId("978-0201616224")
+                .code200("978-0201616224")
+                .mock();
+
+        HttpResponse<String> response = get("/books/978-0201616224/isbn");
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        // WireMock's own mapper indents; the consumer's, configured here, does not -- the
+        // one observable difference that proves this stub rendered through the target's
+        // serializer and not the one AbstractStub falls back to by default.
+        assertThat(response.body()).doesNotContain("\n");
+    }
+
+    @Test
     void matchesAListTheWayTheClientWritesIt() throws Exception {
         new SearchBooksStub(target)
                 .queryGenres("crime", "essay")
