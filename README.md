@@ -1,16 +1,12 @@
 # wiremock-stubgen
 
-Generates **type-safe WireMock stub builders** from OpenAPI specifications.
+[![build](https://github.com/ValentinKarnaukhov/wiremock-stubgen/actions/workflows/build.yml/badge.svg)](https://github.com/ValentinKarnaukhov/wiremock-stubgen/actions/workflows/build.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)](#building--testing)
 
-## Why
-
-Stubbing an HTTP dependency with WireMock is stringly typed. A renamed query
-parameter or a removed operation does not break the build — it produces a stub that
-silently never matches, and a confusing `404` somewhere far from the cause.
-
-`wiremock-stubgen` derives builders from the specification, so a contract change
-becomes a **compile error** in the tests that depend on it, and reads a body field
-by field instead of a hand-written JSON string.
+Generates **type-safe WireMock stub builders** from OpenAPI specifications, so a
+contract change is a compile error in your tests instead of a `404` nobody can
+explain.
 
 ```java
 new GetBookStub(target)
@@ -21,6 +17,60 @@ new GetBookStub(target)
             .authorCountry("US")
         .mock();
 ```
+
+## Table of contents
+
+- [Features](#features)
+- [Why](#why)
+- [How it differs from what already exists](#how-it-differs-from-what-already-exists)
+- [Status](#status)
+- [Getting started](#getting-started)
+  - [1. Build and install](#1-build-and-install)
+  - [2. Generate models with openapi-generator, stubs with this plugin](#2-generate-models-with-openapi-generator-stubs-with-this-plugin)
+  - [3. Use a stub in a test](#3-use-a-stub-in-a-test)
+  - [Configuration options](#configuration-options)
+  - [Where stubs end up: test scope vs. shared client libraries](#where-stubs-end-up-test-scope-vs-shared-client-libraries)
+- [Known limitations](#known-limitations)
+- [Modules](#modules)
+- [Building & testing](#building--testing)
+- [Contributing](#contributing)
+- [Roadmap](#roadmap)
+- [License](#license)
+
+## Features
+
+- **Compile-time contract checking.** A renamed parameter, a removed operation,
+  or a body field that no longer exists breaks the build where the stub is
+  used, not silently at test time.
+- **Field-by-field bodies**, both ways: a request body matcher and a response
+  body builder generated per schema, so a test states what it cares about
+  instead of a hand-written JSON string that happens to parse.
+- **Mirrors the client, not the spec.** Query parameter list formats,
+  `OffsetDateTime` formatting, media types — every wire-format decision is
+  measured against what `openapi-generator`'s own generated client actually
+  sends, not assumed from reading the OpenAPI document alone.
+- **No models of its own.** Stubs compile against the model classes your
+  existing `openapi-generator` build already produces; nothing is duplicated
+  or kept in sync by hand.
+- **Escape hatches, not dead ends.** A missing `modelPackage`, `explode: false`,
+  or an unusual body shape degrades to a working, less-typed stub rather than
+  a build failure — see [Configuration options](#configuration-options).
+- **Extensible by design.** Language targets are discovered with
+  `ServiceLoader`; adding a target language is a new module, not a change to
+  the core or the build-tool plugins.
+- **Proven, not just tested.** Every behavioural test in this project is
+  written to fail under a specific mutation of the code it covers — a
+  passing test alone is not treated as proof.
+
+## Why
+
+Stubbing an HTTP dependency with WireMock is stringly typed. A renamed query
+parameter or a removed operation does not break the build — it produces a stub that
+silently never matches, and a confusing `404` somewhere far from the cause.
+
+`wiremock-stubgen` derives builders from the specification, so a contract change
+becomes a **compile error** in the tests that depend on it, and reads a body field
+by field instead of a hand-written JSON string.
 
 This is real, generated output — see [`wiremock-stubgen-example`](wiremock-stubgen-example)
 for the specification it came from and the live test that exercises it against a
@@ -236,9 +286,9 @@ model classes from a small specification, the plugin generates stubs against the
 the generated stubs are exercised against a live WireMock. Start there for a working,
 buildable reference; this README's snippets are lifted from it.
 
-## Building
+## Building & testing
 
-Requires JDK 17 or later.
+Requires JDK 17 or later; CI (see the badge above) also runs on 21.
 
 ```bash
 mvn verify
@@ -252,6 +302,42 @@ has no logic of its own to protect, and the latter's instructions are almost
 entirely `openapi-generator`'s model classes and this project's own generated
 stubs, neither of which it owns.
 
+## Contributing
+
+There is no separate contributing guide yet, but the working method this
+project has followed so far is the bar for a change to it:
+
+- **Measure, don't assume.** Anything about what `openapi-generator`'s
+  generated client actually sends, or what WireMock actually matches, is
+  worth a throwaway probe against the real thing before it is coded — several
+  fixes in this project's history exist because an earlier assumption turned
+  out to be wrong.
+- **A passing test is not proof.** Show that a test fails under a specific,
+  described mutation of the code it is meant to cover, not only that it
+  passes.
+- **Update the golden files, or add one.** `wiremock-stubgen-codegen-java`'s
+  hand-written goldens are the contract for generated source shape; a change
+  that alters output belongs there too. Only 5 of 17 fixture operations have
+  one today — see [Roadmap](#roadmap).
+
+Issues and pull requests are welcome once this repository has somewhere to
+send them; until then, see [Status](#status).
+
+## Roadmap
+
+Roughly in order of how much currently blocks real use:
+
+1. **Publish somewhere reachable** — a SNAPSHOT to an Artifactory, or the rest
+   of Maven Central publication (the `release` Maven profile is ready; a git
+   remote, a Central account, a GPG key and a `0.1.0` tag are not).
+2. Close the gaps under [Known limitations](#known-limitations).
+3. Extend golden-file coverage from 5 of 17 fixture operations towards all of
+   them.
+4. A Gradle plugin alongside the existing Maven one, using the same
+   `LanguageTarget` service-provider mechanism already in place for adding
+   target languages.
+
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE).
+
