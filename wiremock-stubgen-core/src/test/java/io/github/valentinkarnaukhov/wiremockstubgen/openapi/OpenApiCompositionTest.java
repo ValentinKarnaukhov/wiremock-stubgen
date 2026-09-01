@@ -1,6 +1,7 @@
 package io.github.valentinkarnaukhov.wiremockstubgen.openapi;
 
 import io.github.valentinkarnaukhov.wiremockstubgen.fixtures.Fixtures;
+import io.github.valentinkarnaukhov.wiremockstubgen.spec.CollectionFormat;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.ObjectSchema;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.Operation;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.Parameter;
@@ -339,14 +340,16 @@ class OpenApiCompositionTest {
         List<Parameter> query = operation("getGrouped").parametersIn(ParameterLocation.QUERY);
 
         assertThat(query).extracting(Parameter::name)
-                .containsExactly("term", "limit", "kind", "Composed", "written")
+                .containsExactly("term", "limit", "kind", "tags", "Composed", "written",
+                        "repeated", "joined", "spaced", "piped", "deep")
                 .doesNotContain("Filter", "Inline");
         // The properties keep the types the model class gives them, so an inline enum is
         // still the enum the generator nested in the model rather than a bare string.
-        assertThat(query).extracting(Parameter::type).containsExactly(
+        assertThat(query).extracting(Parameter::type).startsWith(
                 TypeRef.primitive("string", null),
                 TypeRef.primitive("integer", "int64"),
                 TypeRef.nestedEnumeration("Filter", "KindEnum"),
+                TypeRef.array(TypeRef.primitive("string", null)),
                 TypeRef.object("Composed"),
                 TypeRef.primitive("string", null));
     }
@@ -359,10 +362,40 @@ class OpenApiCompositionTest {
     void leavesAnObjectOutsideTheQueryStringWhole() {
         assertThat(operation("getGrouped").parametersIn(ParameterLocation.HEADER))
                 .extracting(Parameter::name)
-                .containsExactly("Header");
+                .containsExactly("Header", "HeaderList");
     }
 
     private static List<String> properties(String schema) {        return schema(schema).properties().stream().map(Property::name).toList();
+    }
+
+    @Test
+    void writesEachListTheWayTheGeneratedClientPutsItOnTheWire() {
+        // Measured against openapi-generator 7.24.0: only explode: false comma-joins a
+        // query list, a style outranks explode, and outside the query string everything
+        // is comma-joined. Getting this wrong compiles and then quietly never matches.
+        assertThat(collectionFormat("repeated")).isEqualTo(CollectionFormat.MULTI);
+        assertThat(collectionFormat("joined")).isEqualTo(CollectionFormat.CSV);
+        assertThat(collectionFormat("spaced")).isEqualTo(CollectionFormat.SSV);
+        assertThat(collectionFormat("piped")).isEqualTo(CollectionFormat.PIPES);
+        assertThat(collectionFormat("deep")).isEqualTo(CollectionFormat.CSV);
+        assertThat(collectionFormat("HeaderList")).isEqualTo(CollectionFormat.CSV);
+        assertThat(collectionFormat("cookieList")).isEqualTo(CollectionFormat.CSV);
+
+        // A list reached by expanding a wrapper object is passed with no collection
+        // format at all, and the client falls back to comma-joining it.
+        assertThat(collectionFormat("tags")).isEqualTo(CollectionFormat.CSV);
+
+        // Everything that is not a list joins nothing, whatever style it was given.
+        assertThat(collectionFormat("term")).isEqualTo(CollectionFormat.NONE);
+        assertThat(collectionFormat("Composed")).isEqualTo(CollectionFormat.NONE);
+    }
+
+    private static CollectionFormat collectionFormat(String parameterName) {
+        return operation("getGrouped").parameters().stream()
+                .filter(parameter -> parameter.name().equals(parameterName))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("getGrouped has no parameter " + parameterName))
+                .collectionFormat();
     }
 
     private static Property property(String schema, String name) {

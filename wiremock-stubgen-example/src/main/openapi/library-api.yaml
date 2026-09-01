@@ -77,6 +77,23 @@ paths:
           in: query
           schema:
             $ref: '#/components/schemas/PageRequest'
+        # A list. Without an explicit explode the client repeats the parameter, so the
+        # stub matches a set of values rather than one comma-joined string.
+        - name: genres
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        # The same list written explode: false, which the client comma-joins instead.
+        - name: years
+          in: query
+          explode: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int32
       responses:
         200:
           description: The books that matched.

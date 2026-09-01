@@ -9,9 +9,9 @@ public final class {{className}} extends {{abstractStub}}<{{className}}> {
     private static final String {{pathConstant}} = "{{path}}";
 {{#parameterFields}}
 
-{{#names}}
-    private final {{mapType}}<{{keyType}}, {{valueType}}> {{.}} = new {{implType}}<>();
-{{/names}}
+{{#fields}}
+    private final {{mapType}}<{{keyType}}, {{valueType}}> {{name}} = new {{implType}}<>();
+{{/fields}}
 {{/parameterFields}}
 
     public {{className}}({{stubTarget}} target) {
@@ -20,7 +20,7 @@ public final class {{className}} extends {{abstractStub}}<{{className}}> {
 {{#parameterMethods}}
 
     public {{className}} {{name}}({{type}} value) {
-        {{field}}.put("{{wireName}}", {{equalTo}}({{valueExpression}}));
+        {{field}}.put("{{wireName}}", {{pattern}});
         return self();
     }
 {{/parameterMethods}}
@@ -60,7 +60,7 @@ public final class {{className}} extends {{abstractStub}}<{{className}}> {
         pathParams.forEach(request::withPathParam);
 {{/hasPath}}
 {{#hasQuery}}
-        request.withQueryParams(queryParams);
+        queryParams.forEach(request::withQueryParam);
 {{/hasQuery}}
 {{#hasHeader}}
         headerParams.forEach(request::withHeader);
@@ -71,7 +71,7 @@ public final class {{className}} extends {{abstractStub}}<{{className}}> {
         return request;
 {{/local}}
 {{^local}}
-        return {{expression}}{{#hasQuery}}.withQueryParams(queryParams){{/hasQuery}};
+        return {{expression}};
 {{/local}}
     }
 {{/request}}

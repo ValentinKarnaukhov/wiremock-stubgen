@@ -171,6 +171,33 @@ class LibraryStubsTest {
         assertThat(get("/books?Page=whatever").statusCode()).isEqualTo(404);
     }
 
+    @Test
+    void matchesAListTheWayTheClientWritesIt() throws Exception {
+        new SearchBooksStub(target)
+                .queryGenres("crime", "essay")
+                .queryYears(1979, 2011)
+                .code200()
+                    .total(0)
+                .mock();
+
+        // genres is repeated because nothing said explode: false; years is joined
+        // because something did. Both are what openapi-generator's client sends.
+        assertThat(get("/books?genres=crime&genres=essay&years=1979%2C2011").statusCode())
+                .isEqualTo(200);
+        // havingExactly ignores order, so the same two values the other way round match.
+        assertThat(get("/books?genres=essay&genres=crime&years=1979%2C2011").statusCode())
+                .isEqualTo(200);
+
+        // A comma-joined genres is a different request: that is the bug this replaced.
+        assertThat(get("/books?genres=crime%2Cessay&years=1979%2C2011").statusCode())
+                .isEqualTo(404);
+        // And neither is Java's own rendering of a list.
+        assertThat(get("/books?genres=%5Bcrime%2C+essay%5D&years=1979%2C2011").statusCode())
+                .isEqualTo(404);
+        // havingExactly counts, so a subset does not match.
+        assertThat(get("/books?genres=crime&years=1979%2C2011").statusCode()).isEqualTo(404);
+    }
+
     /**
      * A request body matched field by field. The stub answers only requests whose body
      * carries these values, and says nothing about the rest of it — {@code days} is not

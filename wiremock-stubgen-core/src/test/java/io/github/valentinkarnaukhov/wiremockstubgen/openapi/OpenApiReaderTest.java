@@ -46,7 +46,7 @@ class OpenApiReaderTest {
         assertThat(inQuery.parametersIn(ParameterLocation.QUERY))
                 .extracting(Parameter::name)
                 .containsExactly("stringParam", "integerParam", "longParam", "booleanParam",
-                        "floatParam", "doubleParam", "enumParam");
+                        "floatParam", "doubleParam", "enumParam", "repeatedParam", "joinedParam");
 
         // Renaming the wire name here would silently stop the generated stub from matching
         // the request the client actually sends.

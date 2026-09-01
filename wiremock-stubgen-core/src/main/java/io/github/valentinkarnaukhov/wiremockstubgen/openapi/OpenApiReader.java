@@ -1,6 +1,7 @@
 package io.github.valentinkarnaukhov.wiremockstubgen.openapi;
 
 import io.github.valentinkarnaukhov.wiremockstubgen.naming.Identifiers;
+import io.github.valentinkarnaukhov.wiremockstubgen.spec.CollectionFormat;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.HttpMethod;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.Operation;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.Parameter;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.parameters.Parameter.StyleEnum;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.parser.core.models.ParseOptions;
@@ -217,16 +219,54 @@ public final class OpenApiReader {
             if (!grouped.isEmpty()) {
                 for (Property property : grouped) {
                     byIdentity.put(location + " " + property.name(),
-                            new Parameter(property.name(), location, property.type()));
+                            new Parameter(property.name(), location, property.type(),
+                                    // A property of an expanded object is handed to the client
+                                    // without a collection format of its own, and the client
+                                    // falls back to a comma.
+                                    joinedBy(property.type(), CollectionFormat.CSV)));
                 }
                 continue;
             }
+            TypeRef type = schemas.typeOf(parameter.getSchema(), null);
             byIdentity.put(location + " " + parameter.getName(), new Parameter(
                     parameter.getName(),
                     location,
-                    schemas.typeOf(parameter.getSchema(), null)));
+                    type,
+                    joinedBy(type, location == ParameterLocation.QUERY
+                            ? queryCollectionFormat(parameter)
+                            : CollectionFormat.CSV)));
         }
         return List.copyOf(byIdentity.values());
+    }
+
+    /** The format a collection would use, or {@link CollectionFormat#NONE} if it is not one. */
+    private static CollectionFormat joinedBy(TypeRef type, CollectionFormat format) {
+        return type.kind() == TypeRef.Kind.ARRAY ? format : CollectionFormat.NONE;
+    }
+
+    /**
+     * How a list in the query string is written, mirroring openapi-generator 7.24.0 — the
+     * client the stub has to agree with. Measured there: {@code spaceDelimited} and
+     * {@code pipeDelimited} pick their separator whatever {@code explode} says,
+     * {@code deepObject} falls back to a comma, and everything else repeats the parameter
+     * unless {@code explode} is explicitly false.
+     *
+     * <p>This is the one place {@code explode} is read. Elsewhere it is deliberately
+     * ignored, but here it decides the text on the wire and cannot be guessed around.
+     */
+    private static CollectionFormat queryCollectionFormat(
+            io.swagger.v3.oas.models.parameters.Parameter parameter) {
+        StyleEnum style = parameter.getStyle();
+        if (style == StyleEnum.SPACEDELIMITED) {
+            return CollectionFormat.SSV;
+        }
+        if (style == StyleEnum.PIPEDELIMITED) {
+            return CollectionFormat.PIPES;
+        }
+        if (style == StyleEnum.DEEPOBJECT || Boolean.FALSE.equals(parameter.getExplode())) {
+            return CollectionFormat.CSV;
+        }
+        return CollectionFormat.MULTI;
     }
 
     private ParameterLocation location(String in) {

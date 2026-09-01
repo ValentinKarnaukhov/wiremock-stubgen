@@ -70,6 +70,22 @@ paths:
             enum:
             - EnumValue1
             - EnumValue2
+        - name: repeatedParam
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: joinedParam
+          in: query
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
       responses:
         200:
           description: OK

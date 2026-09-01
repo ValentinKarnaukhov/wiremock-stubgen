@@ -36,9 +36,12 @@ record StubView(
     record ParameterFields(
             String mapType,
             String keyType,
-            String valueType,
             String implType,
-            List<String> names) {
+            List<ParameterField> fields) {
+    }
+
+    /** One map, named for where its parameters travel and typed for what it has to hold. */
+    record ParameterField(String name, String valueType) {
     }
 
     record ParameterMethod(
@@ -46,8 +49,7 @@ record StubView(
             String type,
             String field,
             String wireName,
-            String equalTo,
-            String valueExpression) {
+            String pattern) {
     }
 
     record BodyMethod(String type) {

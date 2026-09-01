@@ -6,6 +6,7 @@ import io.github.valentinkarnaukhov.wiremockstubgen.flatten.BodySide;
 import io.github.valentinkarnaukhov.wiremockstubgen.flatten.FlatteningOptions;
 import io.github.valentinkarnaukhov.wiremockstubgen.flatten.Flattener;
 import io.github.valentinkarnaukhov.wiremockstubgen.naming.Identifiers;
+import io.github.valentinkarnaukhov.wiremockstubgen.spec.CollectionFormat;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.HttpMethod;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.Operation;
 import io.github.valentinkarnaukhov.wiremockstubgen.spec.Parameter;
@@ -211,7 +212,9 @@ final class StubEmitter {
         return new StubView.Request(
                 mappingBuilder,
                 "%s(%s(%s))".formatted(verb, url, pathConstant(operation)),
-                hasPath || hasHeader || hasCookie,
+                // A query parameter is applied one at a time now that it carries a
+                // multi-value pattern, so any parameter at all needs the local variable.
+                hasPath || hasQuery || hasHeader || hasCookie,
                 hasPath,
                 hasQuery,
                 hasHeader,
@@ -225,35 +228,75 @@ final class StubEmitter {
     // ── parameters ────────────────────────────────────────────────────────────
 
     private StubView.ParameterFields parameterFields(Operation operation, Imports imports) {
-        List<String> names = fieldNames().entrySet().stream()
+        List<StubView.ParameterField> fields = fieldNames().entrySet().stream()
                 .filter(entry -> has(operation, entry.getKey()))
-                .map(Map.Entry::getValue)
+                .map(entry -> new StubView.ParameterField(
+                        entry.getValue(),
+                        imports.use(WIREMOCK + (entry.getKey() == ParameterLocation.QUERY
+                                ? "matching.MultiValuePattern"
+                                : "matching.StringValuePattern"))))
                 .toList();
-        if (names.isEmpty()) {
+        if (fields.isEmpty()) {
             return null;
         }
         return new StubView.ParameterFields(
                 imports.use("java.util.Map"),
                 imports.use("java.lang.String"),
-                imports.use(WIREMOCK + "matching.StringValuePattern"),
                 imports.use("java.util.LinkedHashMap"),
-                names);
+                fields);
     }
 
     private List<StubView.ParameterMethod> parameterMethods(Operation operation, Imports imports) {
         Map<ParameterLocation, String> fields = fieldNames();
         List<StubView.ParameterMethod> methods = new ArrayList<>();
         for (Parameter parameter : operation.parameters()) {
-            String javaType = types.nameOf(parameter.type()).orElse("java.lang.String");
             methods.add(new StubView.ParameterMethod(
                     methodNameOf(parameter),
-                    imports.use(javaType),
+                    parameterType(parameter, imports),
                     fields.get(parameter.location()),
                     parameter.name(),
-                    imports.useStatic(WIREMOCK + "client.WireMock.equalTo"),
-                    JavaTypes.asQueryValue(javaType, "value")));
+                    pattern(parameter, imports)));
         }
         return methods;
+    }
+
+    /**
+     * The type the parameter method takes. A list is taken as varargs of its element type
+     * rather than as a {@code List}: the caller writes the values, and the stub is the one
+     * that knows how they are strung together.
+     */
+    private String parameterType(Parameter parameter, Imports imports) {
+        if (!parameter.collectionFormat().isCollection()) {
+            return imports.use(types.nameOf(parameter.type()).orElse("java.lang.String"));
+        }
+        return imports.use(types.nameOf(parameter.type().items()).orElse("java.lang.String")) + "...";
+    }
+
+    /**
+     * The matcher stored for the parameter, already written out in full.
+     *
+     * <p>Query parameters are held as {@code MultiValuePattern} even when they carry one
+     * value, because a repeated parameter cannot be expressed any other way and one field
+     * per operation is easier to read than two.
+     */
+    private String pattern(Parameter parameter, Imports imports) {
+        boolean query = parameter.location() == ParameterLocation.QUERY;
+        CollectionFormat format = parameter.collectionFormat();
+        if (query && format == CollectionFormat.MULTI) {
+            return "%s(%s(value))".formatted(
+                    imports.useStatic(WIREMOCK + "client.WireMock.havingExactly"),
+                    imports.use(RUNTIME + "ParameterValues") + ".eachEqualTo");
+        }
+        String equalTo = imports.useStatic(WIREMOCK + "client.WireMock.equalTo");
+        String value = format.isCollection()
+                ? "%s.join(\"%s\", value)".formatted(
+                        imports.use(RUNTIME + "ParameterValues"), format.separator())
+                : JavaTypes.asQueryValue(types.nameOf(parameter.type()).orElse("java.lang.String"),
+                        "value");
+        String single = "%s(%s)".formatted(equalTo, value);
+        return query
+                ? "%s.of(%s)".formatted(imports.use(WIREMOCK + "matching.MultiValuePattern"), single)
+                : single;
     }
 
     /**

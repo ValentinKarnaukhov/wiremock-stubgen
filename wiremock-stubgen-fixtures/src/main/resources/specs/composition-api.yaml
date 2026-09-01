@@ -61,6 +61,39 @@ paths:
           in: header
           schema:
             $ref: '#/components/schemas/Filter'
+        # The rest are lists, one per way openapi-generator can write them on the wire.
+        # A query list with no explode is repeated, one parameter per value.
+        - name: repeated
+          in: query
+          schema: { type: array, items: { type: string } }
+        # explode: false is the only thing that makes the client comma-join a query list.
+        - name: joined
+          in: query
+          explode: false
+          schema: { type: array, items: { type: string } }
+        # A style outranks explode: these stay space- and pipe-separated either way.
+        - name: spaced
+          in: query
+          style: spaceDelimited
+          explode: true
+          schema: { type: array, items: { type: string } }
+        - name: piped
+          in: query
+          style: pipeDelimited
+          explode: true
+          schema: { type: array, items: { type: string } }
+        # deepObject on a list is not deep at all; the client comma-joins it.
+        - name: deep
+          in: query
+          style: deepObject
+          schema: { type: array, items: { type: string } }
+        # Outside the query string every list is comma-joined, style or no style.
+        - name: HeaderList
+          in: header
+          schema: { type: array, items: { type: string } }
+        - name: cookieList
+          in: cookie
+          schema: { type: array, items: { type: string } }
       responses:
         '200':
           description: Accepted.
@@ -215,6 +248,12 @@ components:
         kind:
           type: string
           enum: [FAST, SLOW]
+        # A list inside an expanded wrapper. The generator passes such a property with no
+        # collection format at all, and its client falls back to comma-joining.
+        tags:
+          type: array
+          items:
+            type: string
 
     # allOf produces one flat class holding every member's properties in member order,
     # with no inheritance. A member may be a composition itself.
