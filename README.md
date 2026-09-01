@@ -22,6 +22,7 @@ new GetBookStub(target)
 
 - [Features](#features)
 - [Why](#why)
+- [From spec to stub](#from-spec-to-stub)
 - [How it differs from what already exists](#how-it-differs-from-what-already-exists)
 - [Status](#status)
 - [Getting started](#getting-started)
@@ -75,6 +76,133 @@ by field instead of a hand-written JSON string.
 This is real, generated output — see [`wiremock-stubgen-example`](wiremock-stubgen-example)
 for the specification it came from and the live test that exercises it against a
 running WireMock server.
+
+## From spec to stub
+
+Two operations from that same example, abridged to fit here. The left column is
+what you write once; the right column is how a test uses what gets generated
+from it — nothing in the right column is hand-maintained.
+
+<table>
+<tr>
+<th>OpenAPI (abridged)</th>
+<th>Generated stub, in use</th>
+</tr>
+<tr>
+<td>
+
+A path parameter and a nested response body:
+
+```yaml
+paths:
+  /books/{bookId}:
+    get:
+      operationId: getBook
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+components:
+  schemas:
+    Book:
+      type: object
+      properties:
+        title:
+          type: string
+        author:
+          $ref: '#/components/schemas/Author'
+    Author:
+      type: object
+      properties:
+        name:
+          type: string
+```
+
+</td>
+<td>
+
+```java
+new GetBookStub(target)
+    .pathBookId("978-0201616224")
+    .code200()
+    .title("The Pragmatic Programmer")
+    .authorName("Andrew Hunt")
+    .mock();
+```
+
+`pathBookId` exists because `bookId` is a path parameter; `title` and
+`authorName` exist because `Book` has a `title` and an `author.name` — rename
+or remove any of them in the spec and the corresponding call stops compiling
+here, rather than the stub quietly matching nothing.
+
+</td>
+</tr>
+<tr>
+<td>
+
+A request body matched field by field, ignoring everything it does not
+mention:
+
+```yaml
+paths:
+  /loans:
+    post:
+      operationId: borrowBook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanRequest'
+      responses:
+        201:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Loan'
+components:
+  schemas:
+    LoanRequest:
+      type: object
+      required: [ bookId ]
+      properties:
+        bookId:
+          type: string
+        borrower:
+          $ref: '#/components/schemas/Borrower'
+        days:
+          type: integer
+```
+
+</td>
+<td>
+
+```java
+new BorrowBookStub(target)
+    .requestBody()
+    .bookId("978-0201616224")
+    .borrowerEmail("reader@example.com")
+    .exit()
+    .code201()
+    .id("loan-1")
+    .mock();
+```
+
+Answers only a request whose body carries this `bookId` and this
+`borrower.email` — `days` is never mentioned, so any value for it, or none,
+still matches. `equalToJson` on a hand-written string could not express
+"these two fields, whatever else is there" without also asserting on `days`.
+
+</td>
+</tr>
+</table>
 
 ## How it differs from what already exists
 
