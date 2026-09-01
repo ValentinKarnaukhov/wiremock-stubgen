@@ -3,6 +3,8 @@ package io.github.valentinkarnaukhov.wiremockstubgen.runtime;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.matching.StringValuePattern;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /**
@@ -32,7 +34,7 @@ public final class ParameterValues {
             if (joined.length() > 0) {
                 joined.append(separator);
             }
-            joined.append(value);
+            joined.append(format(value));
         }
         return joined.toString();
     }
@@ -42,8 +44,26 @@ public final class ParameterValues {
         Objects.requireNonNull(values, "values");
         StringValuePattern[] patterns = new StringValuePattern[values.length];
         for (int index = 0; index < values.length; index++) {
-            patterns[index] = WireMock.equalTo(String.valueOf(values[index]));
+            patterns[index] = WireMock.equalTo(format(values[index]));
         }
         return patterns;
+    }
+
+    /**
+     * Renders a single value the way openapi-generator's own {@code ApiClient} does, so
+     * that a stub matches whatever text that client actually puts on the wire.
+     *
+     * <p>Measured on 7.24.0: {@code parameterToString} special-cases only {@code Date} and
+     * {@code OffsetDateTime} before falling back to {@code String.valueOf}. We never emit
+     * {@code Date} — {@code LocalDate} and every other mapped type already agree with
+     * {@code toString()} — so {@code OffsetDateTime} is the one case worth a formatter:
+     * its {@code toString()} omits seconds when they are zero (10:15 vs 10:15:00), while
+     * the client always writes them via {@code DateTimeFormatter.ISO_OFFSET_DATE_TIME}.
+     */
+    public static String format(Object value) {
+        if (value instanceof OffsetDateTime offsetDateTime) {
+            return DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(offsetDateTime);
+        }
+        return String.valueOf(value);
     }
 }

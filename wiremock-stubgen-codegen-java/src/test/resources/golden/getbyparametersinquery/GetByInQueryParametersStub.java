@@ -43,27 +43,27 @@ public final class GetByInQueryParametersStub extends AbstractStub<GetByInQueryP
     }
 
     public GetByInQueryParametersStub queryIntegerParam(Integer value) {
-        queryParams.put("integerParam", MultiValuePattern.of(equalTo(String.valueOf(value))));
+        queryParams.put("integerParam", MultiValuePattern.of(equalTo(ParameterValues.format(value))));
         return self();
     }
 
     public GetByInQueryParametersStub queryLongParam(Long value) {
-        queryParams.put("longParam", MultiValuePattern.of(equalTo(String.valueOf(value))));
+        queryParams.put("longParam", MultiValuePattern.of(equalTo(ParameterValues.format(value))));
         return self();
     }
 
     public GetByInQueryParametersStub queryBooleanParam(Boolean value) {
-        queryParams.put("booleanParam", MultiValuePattern.of(equalTo(String.valueOf(value))));
+        queryParams.put("booleanParam", MultiValuePattern.of(equalTo(ParameterValues.format(value))));
         return self();
     }
 
     public GetByInQueryParametersStub queryFloatParam(Float value) {
-        queryParams.put("floatParam", MultiValuePattern.of(equalTo(String.valueOf(value))));
+        queryParams.put("floatParam", MultiValuePattern.of(equalTo(ParameterValues.format(value))));
         return self();
     }
 
     public GetByInQueryParametersStub queryDoubleParam(Double value) {
-        queryParams.put("doubleParam", MultiValuePattern.of(equalTo(String.valueOf(value))));
+        queryParams.put("doubleParam", MultiValuePattern.of(equalTo(ParameterValues.format(value))));
         return self();
     }
 

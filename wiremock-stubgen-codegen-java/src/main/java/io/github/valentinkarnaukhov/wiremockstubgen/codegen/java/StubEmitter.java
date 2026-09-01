@@ -292,7 +292,7 @@ final class StubEmitter {
                 ? "%s.join(\"%s\", value)".formatted(
                         imports.use(RUNTIME + "ParameterValues"), format.separator())
                 : JavaTypes.asQueryValue(types.nameOf(parameter.type()).orElse("java.lang.String"),
-                        "value");
+                        "value", RUNTIME + "ParameterValues", imports);
         String single = "%s(%s)".formatted(equalTo, value);
         return query
                 ? "%s.of(%s)".formatted(imports.use(WIREMOCK + "matching.MultiValuePattern"), single)

@@ -3,6 +3,7 @@ package com.example.stubs.getbyparametersinpath;
 import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.matching.StringValuePattern;
 import io.github.valentinkarnaukhov.wiremockstubgen.runtime.AbstractStub;
+import io.github.valentinkarnaukhov.wiremockstubgen.runtime.ParameterValues;
 import io.github.valentinkarnaukhov.wiremockstubgen.runtime.StubTarget;
 
 import java.util.LinkedHashMap;
@@ -39,7 +40,7 @@ public final class GetByInPathParametersStub extends AbstractStub<GetByInPathPar
     }
 
     public GetByInPathParametersStub pathLongParam(Long value) {
-        pathParams.put("longParam", equalTo(String.valueOf(value)));
+        pathParams.put("longParam", equalTo(ParameterValues.format(value)));
         return self();
     }
 

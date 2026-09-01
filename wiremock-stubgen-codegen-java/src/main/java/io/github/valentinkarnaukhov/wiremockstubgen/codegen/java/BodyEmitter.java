@@ -185,7 +185,7 @@ final class BodyEmitter {
                 null,
                 jsonPath,
                 imports.useStatic(WIREMOCK + "client.WireMock.equalTo"),
-                JavaTypes.asQueryValue(javaType, "value"));
+                JavaTypes.asQueryValue(javaType, "value", RUNTIME + "ParameterValues", imports));
     }
 
     /**

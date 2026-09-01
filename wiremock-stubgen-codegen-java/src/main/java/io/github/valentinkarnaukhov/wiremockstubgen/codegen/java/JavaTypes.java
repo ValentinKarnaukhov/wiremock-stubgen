@@ -78,8 +78,16 @@ final class JavaTypes {
     /**
      * Renders a parameter value as the string an HTTP request actually carries. The typed
      * signature exists so the compiler checks the call, not because the value stays typed.
+     *
+     * <p>Everything but a bare String is routed through {@code formatterFqn}'s
+     * {@code format} method, which special-cases {@code OffsetDateTime} to agree with
+     * openapi-generator's client — {@code String.valueOf} alone disagrees with it whenever
+     * the time has zero seconds.
      */
-    static String asQueryValue(String javaType, String expression) {
-        return "java.lang.String".equals(javaType) ? expression : "String.valueOf(" + expression + ")";
+    static String asQueryValue(String javaType, String expression, String formatterFqn, Imports imports) {
+        if ("java.lang.String".equals(javaType)) {
+            return expression;
+        }
+        return imports.use(formatterFqn) + ".format(" + expression + ")";
     }
 }

@@ -94,6 +94,14 @@ paths:
             items:
               type: integer
               format: int32
+        # OffsetDateTime.toString() drops seconds when they are zero; the generated
+        # client always writes them. A stub built from the same value must match the
+        # client's text, not Java's default rendering of the same instant.
+        - name: publishedSince
+          in: query
+          schema:
+            type: string
+            format: date-time
       responses:
         200:
           description: The books that matched.

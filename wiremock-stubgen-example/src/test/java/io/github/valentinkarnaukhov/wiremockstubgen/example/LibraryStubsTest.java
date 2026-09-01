@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -169,6 +171,25 @@ class LibraryStubsTest {
         assertThat(get("/books?offset=40&size=10&sortBy=YEAR").statusCode()).isEqualTo(404);
         // Nothing called Page is ever sent, so nothing may be waiting for it.
         assertThat(get("/books?Page=whatever").statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void matchesADateTheWayTheClientWritesItRatherThanJavasOwnRendering() throws Exception {
+        // No seconds: OffsetDateTime.toString() would give ...T09:00+01:00, but the
+        // generated client always writes seconds, so that is what the stub must match.
+        OffsetDateTime publishedSince = OffsetDateTime.of(2024, 1, 2, 9, 0, 0, 0, ZoneOffset.ofHours(1));
+
+        new SearchBooksStub(target)
+                .queryPublishedSince(publishedSince)
+                .code200()
+                    .total(0)
+                .mock();
+
+        assertThat(get("/books?publishedSince=2024-01-02T09%3A00%3A00%2B01%3A00").statusCode())
+                .isEqualTo(200);
+        // The value Java's own toString() would have produced is a different request.
+        assertThat(get("/books?publishedSince=2024-01-02T09%3A00%2B01%3A00").statusCode())
+                .isEqualTo(404);
     }
 
     @Test
