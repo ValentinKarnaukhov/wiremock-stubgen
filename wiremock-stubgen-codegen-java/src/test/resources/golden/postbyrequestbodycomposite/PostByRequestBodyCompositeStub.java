@@ -6,7 +6,6 @@ import io.github.valentinkarnaukhov.wiremockstubgen.runtime.AbstractRequestBodyM
 import io.github.valentinkarnaukhov.wiremockstubgen.runtime.AbstractStub;
 import io.github.valentinkarnaukhov.wiremockstubgen.runtime.StubTarget;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 
@@ -84,17 +83,17 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
         }
 
         public CompositeBodyMatcher<P> primitive(String value) {
-            match("['primitive']", equalTo(value));
+            match("['primitive']", value);
             return this;
         }
 
         public CompositeBodyMatcher<P> compositeInnerField(String value) {
-            match("['composite']['innerField']", equalTo(value));
+            match("['composite']['innerField']", value);
             return this;
         }
 
         public CompositeBodyMatcher<P> compositeDeepFieldDeepestField(String value) {
-            match("['composite']['deepField']['deepestField']", equalTo(value));
+            match("['composite']['deepField']['deepestField']", value);
             return this;
         }
 
@@ -104,7 +103,7 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
          * different question, which requestBody(...) already answers.
          */
         public CompositeBodyMatcher<P> primitiveList(String value) {
-            match("['primitiveList'][?(@ == " + literal(value) + ")]");
+            matchContains("['primitiveList']", value);
             return this;
         }
 
@@ -126,12 +125,12 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
         }
 
         public CompositeFieldMatcher<P> innerField(String value) {
-            match("['innerField']", equalTo(value));
+            match("['innerField']", value);
             return this;
         }
 
         public CompositeFieldMatcher<P> deepFieldDeepestField(String value) {
-            match("['deepField']['deepestField']", equalTo(value));
+            match("['deepField']['deepestField']", value);
             return this;
         }
     }
@@ -161,13 +160,18 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
     // positions here are list elements, such a method would read as "some element
     // equals this" and mean "the whole list equals this".
     //
-    // OPEN — CONDITIONS ON THE SAME ELEMENT.
-    // compositeList().innerField("A").deepFieldDeepestField("B") emits two
-    // independent matchers, so a request whose first element carries A and whose
-    // second carries B matches. Asking for one element carrying both needs a single
-    // filter — $.compositeList[?(@.innerField == 'A' && …)] — which this shape cannot
-    // build, because each call has already been sent to the stub. WireMock does
-    // understand the filter form; the obstacle is when the expression is assembled.
+    // SETTLED — CONDITIONS ON THE SAME ELEMENT.
+    // compositeList().innerField("A").deepFieldDeepestField("B") now folds both into one
+    // filter, $.compositeList[?(@['innerField'] == 'A' && @['deepField']['deepestField']
+    // == 'B')], so both conditions must hold on one element rather than each
+    // independently satisfying any element. Measured against a live WireMock server
+    // first: a nested [?(...)] predicate inside the filter this builds does not reliably
+    // work (a value in @.path filter does, for a list-contains condition), so
+    // AbstractRequestBodyMatcher accumulates clauses per matcher instance and replaces
+    // its one registered pattern each time rather than adding independent ones -- only
+    // for a position that is some element of an array; everywhere else, where there is
+    // exactly one node the path can mean, each call still adds its own condition, exactly
+    // as before.
     //
     // SETTLED — ESCAPING.
     // primitiveList interpolates the value into the filter expression, so a quote in

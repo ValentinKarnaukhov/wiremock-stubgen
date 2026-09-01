@@ -6,8 +6,8 @@ import com.github.tomakehurst.wiremock.common.Json;
 import com.github.tomakehurst.wiremock.matching.StringValuePattern;
 import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -36,7 +36,7 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
     private String contentType = APPLICATION_JSON;
 
     private StringValuePattern wholeBodyPattern;
-    private final List<StringValuePattern> fieldPatterns = new ArrayList<>();
+    private final Map<Object, StringValuePattern> fieldPatterns = new LinkedHashMap<>();
 
     private Consumer<MappingBuilder> customizer = mappingBuilder -> {
     };
@@ -98,20 +98,28 @@ public abstract class AbstractStub<S extends AbstractStub<S>> {
     }
 
     /**
-     * Adds one condition on the request body. Generated matcher builders reach this
-     * through a method reference the generated stub hands them, which is why it can stay
-     * protected. Repeated WireMock {@code withRequestBody} calls accumulate into a
-     * bodyPatterns array, all of which must hold.
+     * Adds one condition on the request body, or replaces the one previously added under
+     * the same owner. Generated matcher builders reach this through a method reference
+     * the generated stub hands them, which is why it can stay protected.
+     *
+     * <p>{@code owner} is normally a fresh, single-use key — one condition, one entry,
+     * accumulating alongside every other condition, the same way repeated WireMock
+     * {@code withRequestBody} calls AND together. A matcher for some element of an array
+     * passes itself as the owner instead, on every condition it is asked for: since an
+     * array position could otherwise be satisfied by a different element for each
+     * condition, such a matcher folds every condition asked of it into one combined
+     * filter under one entry, replaced each time rather than added to, so what ends up
+     * registered is always the complete, current combination and never a partial one.
      */
-    protected final void addRequestBodyPattern(StringValuePattern pattern) {
-        fieldPatterns.add(Objects.requireNonNull(pattern, "pattern"));
+    protected final void addRequestBodyPattern(Object owner, StringValuePattern pattern) {
+        fieldPatterns.put(Objects.requireNonNull(owner, "owner"), Objects.requireNonNull(pattern, "pattern"));
     }
 
     private void applyRequestBody(MappingBuilder mappingBuilder) {
         if (wholeBodyPattern != null) {
             mappingBuilder.withRequestBody(wholeBodyPattern);
         }
-        fieldPatterns.forEach(mappingBuilder::withRequestBody);
+        fieldPatterns.values().forEach(mappingBuilder::withRequestBody);
     }
 
     /**

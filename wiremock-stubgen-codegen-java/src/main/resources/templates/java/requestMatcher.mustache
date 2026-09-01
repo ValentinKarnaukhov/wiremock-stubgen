@@ -15,14 +15,14 @@
     {{#valueList}}
 
         public {{owner}}<P> {{name}}({{type}} value) {
-            match("{{jsonPath}}[?(@ == " + literal(value) + ")]");
+            matchContains("{{jsonPath}}", value);
             return this;
         }
     {{/valueList}}
     {{^valueList}}
 
         public {{owner}}<P> {{name}}({{type}} value) {
-            match("{{jsonPath}}", {{equalTo}}({{valueExpression}}));
+            match("{{jsonPath}}", value);
             return this;
         }
     {{/valueList}}

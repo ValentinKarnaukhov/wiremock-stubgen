@@ -21,8 +21,6 @@ final class BodyEmitter {
 
     private static final String RUNTIME = "io.github.valentinkarnaukhov.wiremockstubgen.runtime.";
 
-    private static final String WIREMOCK = "com.github.tomakehurst.wiremock.";
-
     private final JavaTypes types;
 
     private final Imports imports;
@@ -171,21 +169,20 @@ final class BodyEmitter {
         if (accessor.kind() == Accessor.Kind.NESTED_LIST) {
             return new StubView.MatcherAccessor(
                     owner, accessor.name(), null, true, false,
-                    matcherName(accessor.targetSchema()), jsonPath, null, null);
+                    matcherName(accessor.targetSchema()), jsonPath);
         }
         // The element type either way: a list of leaves is asked whether any element
-        // equals the value, so the value is one element and not the list.
-        String javaType = valueType(accessor);
+        // equals the value, so the value is one element and not the list. Formatting and
+        // pattern-building both happen at runtime now -- see AbstractRequestBodyMatcher
+        // -- so there is nothing type-specific left to decide here.
         return new StubView.MatcherAccessor(
                 owner,
                 accessor.name(),
-                imports.use(javaType),
+                imports.use(valueType(accessor)),
                 false,
                 accessor.kind() == Accessor.Kind.VALUE_LIST,
                 null,
-                jsonPath,
-                imports.useStatic(WIREMOCK + "client.WireMock.equalTo"),
-                JavaTypes.asQueryValue(javaType, "value", RUNTIME + "ParameterValues", imports));
+                jsonPath);
     }
 
     /**

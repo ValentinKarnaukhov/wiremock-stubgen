@@ -234,6 +234,62 @@ class LibraryStubsTest {
     }
 
     @Test
+    void requiresTwoConditionsOnTheSameElementRatherThanEachOnAnyElement() throws Exception {
+        // Before this, two conditions chained on one compositeList()-style matcher were
+        // each an independent "some element" filter, so an element carrying the book and
+        // a DIFFERENT element carrying the borrower used to be enough. One compositeList()
+        // call is now one combined filter: both conditions must hold on one element.
+        new BorrowBooksStub(target)
+                .requestBody()
+                    .bookId("978-0201616224")
+                    .borrowerName("Ada")
+                .exit()
+                .code201()
+                .mock();
+
+        HttpResponse<String> sameElement = post("/loans/bulk", """
+                [{"bookId": "978-0201616224", "borrower": {"name": "Ada"}}]
+                """);
+        assertThat(sameElement.statusCode()).isEqualTo(201);
+
+        HttpResponse<String> differentElements = post("/loans/bulk", """
+                [
+                  {"bookId": "978-0201616224", "borrower": {"name": "Bob"}},
+                  {"bookId": "000-0000000000", "borrower": {"name": "Ada"}}
+                ]
+                """);
+        assertThat(differentElements.statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void combinesAnEqualityConditionWithAListContainsConditionOnTheSameElement() throws Exception {
+        new BorrowBooksStub(target)
+                .requestBody()
+                    .bookId("978-0201616224")
+                    .editions(3)
+                .exit()
+                .code201()
+                .mock();
+
+        assertThat(post("/loans/bulk", """
+                [{"bookId": "978-0201616224", "editions": [1, 3, 7]}]
+                """).statusCode()).isEqualTo(201);
+
+        // Same book, but that edition is not among the ones on offer.
+        assertThat(post("/loans/bulk", """
+                [{"bookId": "978-0201616224", "editions": [1, 7]}]
+                """).statusCode()).isEqualTo(404);
+
+        // The edition exists, but on a different book -- still not one element with both.
+        assertThat(post("/loans/bulk", """
+                [
+                  {"bookId": "000-0000000000", "editions": [3]},
+                  {"bookId": "978-0201616224", "editions": [7]}
+                ]
+                """).statusCode()).isEqualTo(404);
+    }
+
+    @Test
     void answersWithTheDeclaredMediaTypeRatherThanAbstractStubsDefault() throws Exception {
         new GetIsbnStub(target)
                 .pathBookId("978-0201616224")

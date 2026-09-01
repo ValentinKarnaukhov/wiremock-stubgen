@@ -183,8 +183,6 @@ record StubView(
             boolean nested,
             boolean valueList,
             String targetMatcher,
-            String jsonPath,
-            String equalTo,
-            String valueExpression) {
+            String jsonPath) {
     }
 }
