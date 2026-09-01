@@ -1,0 +1,28 @@
+name: Bug report
+description: Something a generated stub or the plugin does that doesn't match the OpenAPI spec
+labels: [bug]
+body:
+  - type: textarea
+    id: spec
+    attributes:
+      label: OpenAPI fragment
+      description: >
+        The smallest operation/schema fragment that reproduces the issue, or
+        a pointer to which operation in wiremock-stubgen-fixtures' sample
+        spec it resembles.
+      render: yaml
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs. actual
+      description: What the generated stub should do, and what it does instead. A generated-source diff is more useful than a description.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Plugin version and Java version
+    validations:
+      required: true

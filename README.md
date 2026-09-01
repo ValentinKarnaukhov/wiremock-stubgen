@@ -484,24 +484,10 @@ stubs, neither of which it owns.
 
 ## Contributing
 
-There is no separate contributing guide yet, but the working method this
-project has followed so far is the bar for a change to it:
-
-- **Measure, don't assume.** Anything about what `openapi-generator`'s
-  generated client actually sends, or what WireMock actually matches, is
-  worth a throwaway probe against the real thing before it is coded — several
-  fixes in this project's history exist because an earlier assumption turned
-  out to be wrong.
-- **A passing test is not proof.** Show that a test fails under a specific,
-  described mutation of the code it is meant to cover, not only that it
-  passes.
-- **Update the golden files, or add one.** `wiremock-stubgen-codegen-java`'s
-  hand-written goldens are the contract for generated source shape; a change
-  that alters output belongs there too. Only 5 of 17 fixture operations have
-  one today — see [Roadmap](#roadmap).
-
-Issues and pull requests are welcome once this repository has somewhere to
-send them; until then, see [Status](#status).
+Issues and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md)
+for the working method this project holds changes to, and
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for how the community runs. Security
+issues go through [SECURITY.md](SECURITY.md), not a public issue.
 
 ## Roadmap
 
