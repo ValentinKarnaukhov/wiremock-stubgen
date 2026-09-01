@@ -169,10 +169,11 @@ public final class PostByRequestBodyCompositeStub extends AbstractStub<PostByReq
     // build, because each call has already been sent to the stub. WireMock does
     // understand the filter form; the obstacle is when the expression is assembled.
     //
-    // OPEN — ESCAPING.
+    // SETTLED — ESCAPING.
     // primitiveList interpolates the value into the filter expression, so a quote in
-    // the value breaks it. The others pass the value to equalTo, which does not parse
-    // it.
+    // the value would otherwise break it. AbstractRequestBodyMatcher.literal escapes
+    // a quote and a backslash before quoting the result; the others pass the value to
+    // equalTo, which does not parse it and so needs no escaping.
     //
     // OPEN — SERIALISATION.
     // serialize(body) is AbstractStub's, so matcher and response body go through one
