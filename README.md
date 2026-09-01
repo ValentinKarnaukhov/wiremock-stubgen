@@ -266,7 +266,7 @@ that omits it, both still match.
 
 ## Status
 
-Functional and covered by 224 tests, including live ones against a real WireMock
+Functional and covered by 230 tests, including live ones against a real WireMock
 server, but not yet published anywhere — building it means building from source,
 into your own local Maven repository, until that changes. See
 [Getting started](#getting-started) for what that means in practice, and
@@ -276,7 +276,7 @@ into your own local Maven repository, until that changes. See
 
 ### 1. Build and install
 
-There is no released version yet, so the first step is always this, from the
+There is no published artifact yet, so the first step is always this, from the
 repository root:
 
 ```bash
@@ -285,7 +285,7 @@ mvn install
 
 That puts `io.github.valentinkarnaukhov:wiremock-stubgen-maven-plugin` and
 `io.github.valentinkarnaukhov:wiremock-stubgen-runtime-java` — both at
-`0.1.0-SNAPSHOT` — into your local `~/.m2`, which is as far as a consuming project
+`1.0.0` — into your local `~/.m2`, which is as far as a consuming project
 can currently reach them. Nothing here is on Maven Central, and nothing is on
 any shared Artifactory; a CI runner or a teammate's machine will not resolve
 these coordinates until one of those changes.
@@ -319,7 +319,7 @@ wherever that is:
 <plugin>
     <groupId>io.github.valentinkarnaukhov</groupId>
     <artifactId>wiremock-stubgen-maven-plugin</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <executions>
         <execution>
             <goals><goal>generate</goal></goals>
@@ -341,7 +341,7 @@ where the plugin puts the generated sources by default (see
 <dependency>
     <groupId>io.github.valentinkarnaukhov</groupId>
     <artifactId>wiremock-stubgen-runtime-java</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <scope>test</scope>
 </dependency>
 <dependency>
@@ -493,9 +493,8 @@ issues go through [SECURITY.md](SECURITY.md), not a public issue.
 
 Roughly in order of how much currently blocks real use:
 
-1. **Publish somewhere reachable** — a SNAPSHOT to an Artifactory, or the rest
-   of Maven Central publication (the `release` Maven profile is ready; a git
-   remote, a Central account, a GPG key and a `0.1.0` tag are not).
+1. **Publish somewhere reachable** — the `release` Maven profile is ready; a
+   git remote, a Central account, a GPG key and a `v1.0.0` tag are not.
 2. Close the gaps under [Known limitations](#known-limitations).
 3. Extend golden-file coverage from 5 of 17 fixture operations towards all of
    them.

@@ -2,13 +2,13 @@
 
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
-intends to follow [Semantic Versioning](https://semver.org/) once it reaches
-`1.0.0`.
+follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-Initial public release in progress — see the [Roadmap](README.md#roadmap)
-for what's still open.
+## [1.0.0] - 2026-09-01
+
+Initial public release.
 
 ### Added
 
@@ -20,3 +20,6 @@ for what's still open.
   compositions, and configurable output package/directory/source-root scope.
 - Hand-written runtime (`wiremock-stubgen-runtime-java`) shipped separately
   from generated code, with its own compatibility contract.
+
+[Unreleased]: https://github.com/ValentinKarnaukhov/wiremock-stubgen/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/ValentinKarnaukhov/wiremock-stubgen/releases/tag/v1.0.0

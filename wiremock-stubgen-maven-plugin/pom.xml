@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.github.valentinkarnaukhov</groupId>
         <artifactId>wiremock-stubgen-parent</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>1.0.0</version>
     </parent>
 
     <artifactId>wiremock-stubgen-maven-plugin</artifactId>
