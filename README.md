@@ -25,6 +25,26 @@ No hand-written JSON, no brittle URL strings, no repeated WireMock boilerplate,
 and no silent `404` because a renamed field or removed operation was never caught
 by the compiler.
 
+## Table of contents
+
+- [Why this exists](#why-this-exists)
+- [Before and after](#before-and-after)
+- [From spec to stub](#from-spec-to-stub)
+- [Getting started](#getting-started)
+  - [1. Add the plugin and OpenAPI generator](#1-add-the-plugin-and-openapi-generator)
+  - [2. Add the runtime dependencies](#2-add-the-runtime-dependencies)
+  - [3. Use the generated API in a test](#3-use-the-generated-api-in-a-test)
+- [Features](#features)
+- [How it differs from other approaches](#how-it-differs-from-other-approaches)
+- [Configuration options](#configuration-options)
+- [Test scope vs shared client libraries](#test-scope-vs-shared-client-libraries)
+- [Modules](#modules)
+- [Building & testing](#building--testing)
+- [Known limitations](#known-limitations)
+- [Contributing](#contributing)
+- [Roadmap](#roadmap)
+- [License](#license)
+
 ## Why this exists
 
 Testing an HTTP client usually means writing stubbed responses by hand. That is
