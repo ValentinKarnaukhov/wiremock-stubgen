@@ -3,6 +3,7 @@
 [![build](https://github.com/ValentinKarnaukhov/wiremock-stubgen/actions/workflows/build.yml/badge.svg)](https://github.com/ValentinKarnaukhov/wiremock-stubgen/actions/workflows/build.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)](#building--testing)
+![Maven Central Version](https://img.shields.io/maven-central/v/io.github.valentinkarnaukhov/wiremock-stubgen-maven-plugin)
 
 Generate WireMock stubs from your OpenAPI contract instead of writing and
 maintaining boilerplate by hand.
