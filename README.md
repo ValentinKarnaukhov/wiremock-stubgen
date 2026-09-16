@@ -4,16 +4,85 @@
 [![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Java 17+](https://img.shields.io/badge/Java-17%2B-orange)](#building--testing)
 
-Generate **WireMock stub builders from your OpenAPI specification** instead of
-writing and maintaining stub mappings by hand.
+Generate WireMock stubs from your OpenAPI contract instead of writing and
+maintaining boilerplate by hand.
 
-Describe your API once in OpenAPI. The Maven plugin generates the stub classes,
-request matchers, response builders, and nested body accessors for you. In your
-tests, you only provide the values that matter.
+`wiremock-stubgen` turns your API spec into Java stub builders that are fluent,
+typed, and aligned with the exact shape of the generated client models. The code
+is produced for you; your tests only set the fields that matter.
+
+```java
+new GetBookStub(target)
+    .pathBookId("978-0201616224")
+    .code200()
+        .title("The Pragmatic Programmer")
+        .authorName("Andrew Hunt")
+        .authorCountry("US")
+    .mock();
+```
+
+No hand-written JSON, no brittle URL strings, no repeated WireMock boilerplate,
+and no silent `404` because a renamed field or removed operation was never caught
+by the compiler.
+
+## Why this exists
+
+Testing an HTTP client usually means writing stubbed responses by hand. That is
+fragile:
+
+- renamed query params or path variables still compile, but never match;
+- removed response fields silently drift from the real API;
+- request bodies are often asserted as a giant JSON string;
+- every contract change turns into a manual grep-and-edit exercise.
+
+`wiremock-stubgen` generates stubs from the OpenAPI document itself, so the test
+code stays short and the contract stays checked by the compiler.
 
 ## Before and after
 
-Suppose the API contains this operation:
+### Without wiremock-stubgen
+
+```java
+stubFor(get(urlPathEqualTo("/books/978-0201616224"))
+    .willReturn(aResponse()
+        .withStatus(200)
+        .withHeader("Content-Type", "application/json")
+        .withBody("""
+            {
+              "title": "The Pragmatic Programmer",
+              "author": {
+                "name": "Andrew Hunt",
+                "country": "US"
+              }
+            }
+            """)));
+```
+
+### With wiremock-stubgen
+
+```java
+new GetBookStub(target)
+    .pathBookId("978-0201616224")
+    .code200()
+        .title("The Pragmatic Programmer")
+        .authorName("Andrew Hunt")
+        .authorCountry("US")
+    .mock();
+```
+
+You still get compile-time safety as a bonus, but the real win is that you do
+not have to write the stub mapping by hand.
+
+## From spec to stub
+
+<table>
+<tr>
+<th>OpenAPI (abridged)</th>
+<th>Generated stub, in use</th>
+<th>The stub mapping it registers</th>
+</tr>
+<tr>
+<td>
 
 ```yaml
 paths:
@@ -32,6 +101,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Book'
+
 components:
   schemas:
     Book:
@@ -46,82 +116,129 @@ components:
       properties:
         name:
           type: string
-        country:
-          type: string
 ```
 
-### Without wiremock-stubgen
-
-You have to maintain the URL, HTTP method, response status, headers, JSON
-serialization, and every nested JSON field yourself:
-
-```java
-stubFor(get(urlPathEqualTo("/books/978-0201616224"))
-    .willReturn(aResponse()
-        .withStatus(200)
-        .withHeader("Content-Type", "application/json")
-        .withBody("""
-            {
-              "title": "The Pragmatic Programmer",
-              "author": {
-                "name": "Andrew Hunt",
-                "country": "US"
-              }
-            }
-            """)));
-```
-
-This is easy to get wrong and needs to be updated manually whenever the
-contract changes.
-
-### With wiremock-stubgen
-
-The same contract generates `GetBookStub`, including the path parameter and
-nested body methods:
+</td>
+<td>
 
 ```java
 new GetBookStub(target)
     .pathBookId("978-0201616224")
     .code200()
-        .title("The Pragmatic Programmer")
-        .authorName("Andrew Hunt")
-        .authorCountry("US")
+    .title("The Pragmatic Programmer")
+    .authorName("Andrew Hunt")
     .mock();
 ```
 
-There is no hand-written JSON, URL construction, status code, or WireMock
-mapping to maintain. The generated code takes care of registering the stub.
-The fluent API is also type-safe: renaming `bookId`, removing `author.country`,
-or changing the operation in the OpenAPI document makes the affected test fail
-at compile time instead of producing a mysterious `404` at runtime.
+`pathBookId`, `title`, and `authorName` are generated because they exist in the
+contract. Rename or remove them in the spec and the call stops compiling at the
+point where it is used.
 
-For request bodies, generated builders can match only the fields a test cares
-about:
+</td>
+<td>
+
+```json
+{
+  "request": {
+    "urlPathTemplate": "/books/{bookId}",
+    "method": "GET",
+    "pathParameters": {
+      "bookId": { "equalTo": "978-0201616224" }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "body": "{\"title\":\"The Pragmatic Programmer\",\"author\":{\"name\":\"Andrew Hunt\"}}"
+  }
+}
+```
+
+This is the actual `StubMapping` WireMock receives, generated for you.
+
+</td>
+</tr>
+<tr>
+<td>
+
+```yaml
+paths:
+  /loans:
+    post:
+      operationId: borrowBook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Loan'
+
+components:
+  schemas:
+    LoanRequest:
+      type: object
+      required: [ bookId ]
+      properties:
+        bookId:
+          type: string
+        borrower:
+          $ref: '#/components/schemas/Borrower'
+        days:
+          type: integer
+```
+
+</td>
+<td>
 
 ```java
 new BorrowBookStub(target)
     .requestBody()
-        .bookId("978-0201616224")
-        .borrowerEmail("reader@example.com")
-        .exit()
+    .bookId("978-0201616224")
+    .borrowerEmail("reader@example.com")
+    .exit()
     .code201()
-        .id("loan-1")
+    .id("loan-1")
     .mock();
 ```
 
-The generated matcher checks `bookId` and `borrower.email`, while leaving other
-request fields, such as `days`, unconstrained.
+The matcher checks only the fields a test cares about — the generated request
+body builder ignores `days` unless the test mentions it.
+
+</td>
+<td>
+
+```json
+{
+  "request": {
+    "urlPath": "/loans",
+    "method": "POST",
+    "bodyPatterns": [
+      { "matchesJsonPath": { "expression": "$['bookId']", "equalTo": "978-0201616224" } },
+      { "matchesJsonPath": { "expression": "$['borrower']['email']", "equalTo": "reader@example.com" } }
+    ]
+  },
+  "response": {
+    "status": 201,
+    "headers": { "Content-Type": "application/json" },
+    "body": "{\"id\":\"loan-1\"}"
+  }
+}
+```
+
+Notice how the generated matcher only asserts on the fields that were requested.
+
+</td>
+</tr>
+</table>
 
 ## Getting started
 
-The following setup is enough for a Maven project that already has an OpenAPI
-specification. Copy the plugin and dependency configuration, adjust the paths
-and package names, and run your tests.
-
-### 1. Add the Maven plugins
-
-The OpenAPI Generator creates the model classes. `wiremock-stubgen` uses the
-same specification and those models to create the WireMock stubs.
+### 1. Add the plugin and OpenAPI generator
 
 ```xml
 <build>
@@ -167,14 +284,7 @@ same specification and those models to create the WireMock stubs.
 </build>
 ```
 
-`modelPackage` must point to the model classes generated by
-`openapi-generator`, or to compatible model classes already present in your
-project. `wiremock-stubgen` does not generate a second copy of your models.
-
-### 2. Add the test dependencies
-
-Generated stubs are test sources by default, so add the runtime and WireMock
-dependencies with test scope:
+### 2. Add the runtime dependencies
 
 ```xml
 <dependencies>
@@ -193,12 +303,7 @@ dependencies with test scope:
 </dependencies>
 ```
 
-Run `mvn generate-test-sources`, `mvn test`, or any later Maven phase. The
-plugin generates one stub class per operation under
-`target/generated-test-sources/wiremock-stubgen` and registers that directory as
-a test source root automatically.
-
-### 3. Use the generated stubs
+### 3. Use the generated API in a test
 
 ```java
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
@@ -218,59 +323,36 @@ try {
             .title("The Pragmatic Programmer")
             .authorName("Andrew Hunt")
         .mock();
-
-    // Run the code under test. It will receive the generated response.
 } finally {
     server.stop();
 }
 ```
 
-`StubTarget` is the small hand-written runtime API consumed by generated
-stubs. It can target an in-process `WireMockServer` or a remote WireMock
-instance through its admin API. See
-[`wiremock-stubgen-runtime-java`](wiremock-stubgen-runtime-java) for
-`StubTarget.of(WireMock)` and the `BodySerializer` customization point.
-
-## What gets generated
-
-- One stub builder for each OpenAPI operation.
-- Typed path, query, header, and cookie parameter methods.
-- Response builders for every declared response status.
-- Field-by-field request matchers and response body builders for generated
-  models, including nested properties.
-- The correct HTTP method, URL, status, content type, and WireMock mapping.
-
-The generated stubs mirror the client rather than making assumptions from the
-specification alone. Query parameter list formats, `OffsetDateTime` formatting,
-media types, and other wire-format decisions are measured against the
-`openapi-generator` Java client's behavior.
+The plugin generates one stub class per operation. By default, they land under
+`target/generated-test-sources/wiremock-stubgen`, and Maven registers that
+folder as a test source root automatically.
 
 ## Features
 
-- **Generate instead of maintain.** Your OpenAPI specification is the source of
-  truth; test scaffolding is produced automatically.
-- **Less test code.** Set only the parameters and body fields relevant to a
-  scenario. There is no hand-written JSON or repetitive WireMock setup.
-- **Compile-time contract safety.** A renamed parameter, removed operation, or
-  deleted body field breaks the test where the generated API is used.
-- **Field-by-field bodies.** Match request bodies and build response bodies
-  without asserting on fields a test does not care about.
-- **No duplicate models.** Generated stubs compile against the model classes
-  your existing OpenAPI Generator build already produces.
-- **Graceful escape hatches.** Without `modelPackage`, or for unsupported body
-  shapes, generation falls back to a whole-object form instead of making the
-  project unusable.
-- **Extensible targets.** Language targets are discovered with `ServiceLoader`,
-  so another target can be added as a module without changing the core or build
-  tool plugins.
+- Generate WireMock stub builders from an OpenAPI document.
+- Keep tests concise and focused on what matters in the scenario.
+- Reduce manual JSON and URL boilerplate.
+- Match request bodies field by field instead of asserting a whole JSON string.
+- Build response bodies in a typed, nested way.
+- Catch contract drift at compile time: renamed parameter, removed operation,
+  missing field, or breaking schema change.
+- Reuse the same model classes generated by `openapi-generator` instead of
+  duplicating them.
+- Keep escape hatches for cases where the schema shape is unusual or not fully
+  flattened.
 
-## How it differs from existing approaches
+## How it differs from other approaches
 
-| Approach | What you maintain | Contract drift is caught |
+| Approach | Contract drift is caught | What you still have to maintain |
 |---|---|---|
-| Prism, Microcks, MockServer, Mockoon | A dynamic mock server configuration | At runtime, if at all |
-| `openapi-generator`'s `java-wiremock` | Generated mappings with string parameters | Usually not at compile time |
-| **wiremock-stubgen** | The OpenAPI specification | **At compile time, as a bonus** |
+| Dynamic mock server from the spec | At runtime, if at all | Mock configuration and server logic |
+| `openapi-generator`'s `java-wiremock` | Usually not at compile time | Many string-based params and manual mappings |
+| **wiremock-stubgen** | **At compile time** | Only the OpenAPI spec itself |
 
 ## Configuration options
 
@@ -279,65 +361,48 @@ goal.
 
 | Option | Default | Meaning |
 |---|---|---|
-| `inputSpec` | — (required) | The OpenAPI document to read. |
-| `stubPackage` | `io.github.valentinkarnaukhov.wiremockstubgen.generated` | Package for generated stubs. |
-| `modelPackage` | *(none)* | Package containing the consumer's model classes. If omitted, body values use the whole-object form. |
-| `grouping` | `TAG` | `TAG` places each operation in a sub-package named after its first tag; `NONE` places all stubs directly in `stubPackage`. |
-| `explode` | `true` | Generates field-by-field body APIs in addition to whole-object forms. Set to `false` to keep only whole-object bodies. |
-| `maxDepth` | `5` | Maximum number of nested property hops to flatten before falling back to a whole-object form. |
-| `composition` | `MERGE` | How `oneOf` and `anyOf` schemas are read. `MERGE` flattens alternatives; `OPAQUE` keeps the model as a whole object. |
-| `outputDirectory` | `${project.build.directory}/generated-test-sources/wiremock-stubgen` | Directory for generated `.java` files. |
-| `addTestCompileSourceRoot` | `true` | Registers `outputDirectory` as a test source root. |
-| `addCompileSourceRoot` | `false` | Registers it as a main source root. Mutually exclusive with `addTestCompileSourceRoot`. |
-| `options` | *(empty map)* | Passes target-specific options through to the selected language target. |
+| `inputSpec` | — (required) | OpenAPI document to read. |
+| `stubPackage` | `io.github.valentinkarnaukhov.wiremockstubgen.generated` | Generated stub package. |
+| `modelPackage` | *(none)* | Package of the consumer's model classes. |
+| `grouping` | `TAG` | Group stubs by first tag or put them directly in `stubPackage`. |
+| `explode` | `true` | Generate field-by-field body builders in addition to whole-object forms. |
+| `maxDepth` | `5` | Nested property depth before falling back to a whole-object form. |
+| `composition` | `MERGE` | How `oneOf` and `anyOf` schema alternatives are read. |
+| `outputDirectory` | `${project.build.directory}/generated-test-sources/wiremock-stubgen` | Output directory. |
+| `addTestCompileSourceRoot` | `true` | Register generated sources as test sources. |
+| `addCompileSourceRoot` | `false` | Register them as main sources instead. |
+| `options` | *(empty map)* | Pass through target-specific options. |
 
-## Test scope vs. shared client libraries
+## Test scope vs shared client libraries
 
-By default, generated stubs are test scaffolding. They are written to a test
-source directory and the runtime dependencies are declared with test scope.
-This is the recommended setup when a service tests its own handlers or clients.
+By default the generated stubs are test scaffolding. This is the simplest setup
+for service tests and keeps WireMock out of published runtime artifacts.
 
-If you publish a client library and want its consumers to use the generated
-stubs, make the following changes:
+If you publish a client library, flip the configuration so the generated stubs
+travel with the library itself:
 
-1. Set `addCompileSourceRoot` to `true` and `addTestCompileSourceRoot` to
-   `false`.
-2. Use compile scope for `wiremock-stubgen-runtime-java` and `org.wiremock:wiremock`
-   so they are available transitively to consumers.
-3. Keep generation bound before `compile` (the plugin's default phase is
-   `generate-sources`).
+1. set `addCompileSourceRoot` to `true` and `addTestCompileSourceRoot` to `false`;
+2. move `wiremock-stubgen-runtime-java` and `wiremock` to `compile` scope;
+3. keep generation before `compile`.
 
-## Known limitations
-
-- A response declared under a non-JSON media type gets the correct
-  `Content-Type` header, but its body is still matched and built as JSON.
-- Request bodies declared as non-JSON are not covered end to end yet.
-- `JsonNullable` fields (`openapi-generator`'s `useJsonNullable`) are not
-  covered end to end yet.
-- For nested lists of objects in request matchers, conditions produced by a
-  nested list scope are independent rather than being folded into the enclosing
-  list condition. Such combinations may be unreliable in WireMock.
+Then consumers can write exactly the same generated stub calls without bringing
+their own test-only setup.
 
 ## Modules
 
 | Module | Purpose |
 |---|---|
 | `wiremock-stubgen-core` | Language-neutral OpenAPI representation and the `LanguageTarget` contract. |
-| `wiremock-stubgen-codegen-java` | Java type mapping and source emission. Runs at generation time. |
-| `wiremock-stubgen-runtime-java` | Runtime API used by generated Java stubs. |
-| `wiremock-stubgen-maven-plugin` | Maven integration and source generation. |
-| `wiremock-stubgen-fixtures` | Specifications used by the test suite. |
-| `wiremock-stubgen-example` | A complete consumer-style example. |
+| `wiremock-stubgen-codegen-java` | Java type mapping and source emission. |
+| `wiremock-stubgen-runtime-java` | Runtime API consumed by generated Java stubs. |
+| `wiremock-stubgen-maven-plugin` | Maven integration and generation step. |
+| `wiremock-stubgen-fixtures` | OpenAPI fixtures used by the test suite. |
+| `wiremock-stubgen-example` | End-to-end example project for consumers. |
 
-`codegen-java` reads specifications and writes source; it is not placed on the
-consumer's classpath. `runtime-java` is the published API that generated code
-compiles against. Language targets are discovered with `ServiceLoader`, so
-supporting another language does not require changes to the core or Maven
-plugin. Gradle delivery can use the same target mechanism.
-
-See [`wiremock-stubgen-example`](wiremock-stubgen-example) for a complete
-buildable project: OpenAPI Generator creates the models, this plugin creates
-the stubs, and tests exercise them against a live WireMock server.
+`wiremock-stubgen-example` is the best place to start if you want to see the
+whole workflow in practice: openapi-generator produces the model classes, the
+plugin generates the stubs, and they are exercised against a live WireMock
+server.
 
 ## Building & testing
 
@@ -347,23 +412,32 @@ Requires JDK 17 or later; CI also runs on JDK 21.
 mvn verify
 ```
 
-The modules with production logic (`core`, `codegen-java`, `runtime-java`, and
-`maven-plugin`) enforce minimum JaCoCo coverage at `verify`.
+The modules with production logic enforce a minimum JaCoCo coverage threshold at
+`verify`, so a change that meaningfully drops coverage fails the build instead
+of slipping in quietly.
+
+## Known limitations
+
+- A response declared under a non-JSON media type gets the right `Content-Type`
+  header, but the body is still matched and built as JSON.
+- Request bodies declared as non-JSON are not covered end to end yet.
+- `JsonNullable` fields (`openapi-generator`'s `useJsonNullable`) are not
+  covered end to end yet.
+- Nested list conditions in request-body matchers can still be tricky when a
+  nested object scope has to be reasoned about independently.
 
 ## Contributing
 
-Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md)
-for the contribution workflow and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for
-community guidelines. Security issues should be reported through
-[SECURITY.md](SECURITY.md), not a public issue.
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for
+the contribution workflow, [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for
+community expectations, and [SECURITY.md](SECURITY.md) for security reporting.
 
 ## Roadmap
 
-1. Close the gaps under [Known limitations](#known-limitations).
-2. Extend golden-file coverage from the current fixture operations towards all
-   supported operations.
-3. Add a Gradle plugin using the existing `LanguageTarget` service-provider
-   mechanism.
+1. Close the gaps in the known limitations.
+2. Extend golden-file coverage across more fixture operations.
+3. Add a Gradle plugin using the same `LanguageTarget` mechanism already in
+   place for target discovery.
 
 ## License
 
